@@ -156,17 +156,31 @@ class JsonInputReader(BaseInputReader):
             self._parse_document(document, dataset)
 
     def _parse_document(self, doc, dataset) -> Document:
+        """
+        解析数据
+        :param doc:  从数据集读取的内容
+        doc = {dict: 4} {'tokens': ['Newspaper', '`', 'Explains', "'", 'U.S.', 'Interests', 'Section', 'Events', 'FL1402001894', 'Havana', 'Radio', 'Reloj', 'Network', 'in', 'Spanish', '2100', 'GMT', '13', 'Feb', '94'], 'entities': [{'type': 'Loc', 'start': 4, 'end': 5}, {'type':
+             'tokens' = {list: 20} ['Newspaper', '`', 'Explains', "'", 'U.S.', 'Interests', 'Section', 'Events', 'FL1402001894', 'Havana', 'Radio', 'Reloj', 'Network', 'in', 'Spanish', '2100', 'GMT', '13', 'Feb', '94']
+             'entities' = {list: 5} [{'type': 'Loc', 'start': 4, 'end': 5}, {'type': 'Loc', 'start': 9, 'end': 10}, {'type': 'Org', 'start': 10, 'end': 13}, {'type': 'Other', 'start': 15, 'end': 17}, {'type': 'Other', 'start': 17, 'end': 20}]
+             'relations' = {list: 1} [{'type': 'OrgBased_In', 'head': 2, 'tail': 1}]
+        :type doc: dict, 包含tokens，entities，relations
+        :param dataset:
+        :type dataset:
+        :return:
+        :rtype:
+        """
         jtokens = doc['tokens']
         jrelations = doc['relations']
         jentities = doc['entities']
-
-        # parse tokens
+        # eg: doc_encoding: [101, 21158, 169, 16409, 18220, 1116, 112, 158, 119, 156, 119, 17067, 1116, 6177, 17437, 23485, 17175, 1568, 10973, 24400, 1604, 1580, 1527, 16092, 2664, 11336, 2858, 3361, 3998, 1107, 2124, 13075, 1568, 14748, 1942, 1492, 13650, 5706, 102]
+        # 解析token，和编码
         doc_tokens, doc_encoding = _parse_tokens(jtokens, dataset, self._tokenizer)
-
-        # parse entity mentions
+        # 解析实体提及
+        # eg: jentities: [{'type': 'Loc', 'start': 4, 'end': 5}, {'type': 'Loc', 'start': 9, 'end': 10}, {'type': 'Org', 'start': 10, 'end': 13}, {'type': 'Other', 'start': 15, 'end': 17}, {'type': 'Other', 'start': 17, 'end': 20}]
+        # eg: doc_tokens: [Newspaper, `, Explains, ', U.S., Interests, Section, Events, FL1402001894, Havana, Radio, Reloj, Network, in, Spanish, 2100, GMT, 13, Feb, 94]
+        # eg: entities: 返回文档的实体
         entities = self._parse_entities(jentities, doc_tokens, dataset)
-
-        # parse relations
+        #解析关系， 通过解析出来的实体和原书记讲的关系
         relations = self._parse_relations(jrelations, entities, dataset)
 
         # create document
@@ -175,42 +189,83 @@ class JsonInputReader(BaseInputReader):
         return document
 
     def _parse_entities(self, jentities, doc_tokens, dataset) -> List[Entity]:
-        entities = []
+        """
 
+        :param jentities:
+        :type jentities:
+        :param doc_tokens:
+        :type doc_tokens:
+        :param dataset:
+        :type dataset:
+        :return:
+        :rtype:
+        """
+        entities = []
         for entity_idx, jentity in enumerate(jentities):
+            # eg: entity_type = {EntityType} <spert.entities.EntityType object at 0x165180220>
+            #  identifier = {str} 'Loc'
+            #  index = {int} 1
+            #  short_name = {str} 'Loc'
+            #  verbose_name = {str} 'Location'
+
+            # eg: jentity: {'type': 'Loc', 'start': 4, 'end': 5}
             entity_type = self._entity_types[jentity['type']]
             start, end = jentity['start'], jentity['end']
 
-            # create entity mention
+            #创建实体提及: eg: tokens: [U.S.]
             tokens = doc_tokens[start:end]
             phrase = " ".join([t.phrase for t in tokens])
             entity = dataset.create_entity(entity_type, tokens, phrase)
+            # entity: U.S.
             entities.append(entity)
-
+        # eg: entities: list
+        #      0 = {Entity} U.S.
+        #      1 = {Entity} Havana
+        #      2 = {Entity} Radio Reloj Network
+        #      3 = {Entity} 2100 GMT
+        #      4 = {Entity} 13 Feb 94
         return entities
 
     def _parse_relations(self, jrelations, entities, dataset) -> List[Relation]:
-        relations = []
+        """
 
+        :param jrelations:
+        :type jrelations:
+        :param entities:
+        :type entities:
+        :param dataset:
+        :type dataset:
+        :return:
+        :rtype:
+        """
+        relations = []
         for jrelation in jrelations:
+            # eg: jrelation: {'type': 'OrgBased_In', 'head': 2, 'tail': 1}
+            # eg: relation_type = {RelationType} <spert.entities.RelationType object at 0x13f9ace80>
+            #  identifier = {str} 'OrgBased_In'
+            #  index = {int} 3
+            #  short_name = {str} 'OrgBI'
+            #  symmetric = {bool} False
+            #  verbose_name = {str} 'Organization based in'
             relation_type = self._relation_types[jrelation['type']]
 
             head_idx = jrelation['head']
             tail_idx = jrelation['tail']
 
-            # create relation
+            #创建关系
             head = entities[head_idx]
             tail = entities[tail_idx]
-
+            # 判断头实体和尾实体的位置，谁在前面，谁作为头实体
             reverse = int(tail.tokens[0].index) < int(head.tokens[0].index)
 
-            # for symmetric relations: head occurs before tail in sentence
+            # 对称关系：头在句子中出现在尾之前
             if relation_type.symmetric and reverse:
+                # 交换头尾实体
                 head, tail = util.swap(head, tail)
-
+            # 创建一个关系
             relation = dataset.create_relation(relation_type, head_entity=head, tail_entity=tail, reverse=reverse)
             relations.append(relation)
-
+        # 所有关系
         return relations
 
 
