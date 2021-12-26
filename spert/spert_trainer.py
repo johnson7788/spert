@@ -221,16 +221,16 @@ class SpERTTrainer(BaseTrainer):
         """
         self._logger.info("开始训练第: %s个 epoch" % epoch)
 
-        # create data loader
+        # 创建dataloader， Dataset.TRAIN_MODE： train, 修改self._mode为train
         dataset.switch_mode(Dataset.TRAIN_MODE)
         data_loader = DataLoader(dataset, batch_size=self._args.train_batch_size, shuffle=True, drop_last=True,
                                  num_workers=self._args.sampling_processes, collate_fn=sampling.collate_fn_padding)
-
+        # 清空梯度
         model.zero_grad()
-
         iteration = 0
+        # eg: total: 461
         total = dataset.document_count // self._args.train_batch_size
-        for batch in tqdm(data_loader, total=total, desc='Train epoch %s' % epoch):
+        for batch in tqdm(data_loader, total=total, desc='训练 epoch %s' % epoch):
             model.train()
             batch = util.to_device(batch, self._device)
 
