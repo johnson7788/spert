@@ -202,7 +202,24 @@ class SpERTTrainer(BaseTrainer):
 
     def _train_epoch(self, model: torch.nn.Module, compute_loss: Loss, optimizer: Optimizer, dataset: Dataset,
                      updates_epoch: int, epoch: int):
-        self._logger.info("Train epoch: %s" % epoch)
+        """
+        训练一个epoch
+        :param model:
+        :type model:
+        :param compute_loss:
+        :type compute_loss:
+        :param optimizer:
+        :type optimizer:
+        :param dataset:
+        :type dataset:
+        :param updates_epoch: 461
+        :type updates_epoch:  int
+        :param epoch: 0
+        :type epoch: int
+        :return:
+        :rtype:
+        """
+        self._logger.info("开始训练第: %s个 epoch" % epoch)
 
         # create data loader
         dataset.switch_mode(Dataset.TRAIN_MODE)
