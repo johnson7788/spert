@@ -22,18 +22,17 @@ def get_token(h: torch.tensor, x: torch.tensor, token: int):
 
 
 class SpERT(BertPreTrainedModel):
-    """ Span-based model to jointly extract entities and relations """
-
+    """ 基于跨度的模型来联合提取实体和关系"""
     VERSION = '1.1'
 
     def __init__(self, config: BertConfig, cls_token: int, relation_types: int, entity_types: int,
                  size_embedding: int, prop_drop: float, freeze_transformer: bool, max_pairs: int = 100):
         super(SpERT, self).__init__(config)
 
-        # BERT model
+        # 首先加载Bert模型
         self.bert = BertModel(config)
 
-        # layers
+        # 新建分类层
         self.rel_classifier = nn.Linear(config.hidden_size * 3 + size_embedding * 2, relation_types)
         self.entity_classifier = nn.Linear(config.hidden_size * 2 + size_embedding, entity_types)
         self.size_embeddings = nn.Embedding(100, size_embedding)
@@ -48,7 +47,7 @@ class SpERT(BertPreTrainedModel):
         self.init_weights()
 
         if freeze_transformer:
-            print("Freeze transformer weights")
+            print("设置冻结transformer权重")
 
             # freeze all transformer weights
             for param in self.bert.parameters():
@@ -56,7 +55,23 @@ class SpERT(BertPreTrainedModel):
 
     def _forward_train(self, encodings: torch.tensor, context_masks: torch.tensor, entity_masks: torch.tensor,
                        entity_sizes: torch.tensor, relations: torch.tensor, rel_masks: torch.tensor):
-        # get contextualized token embeddings from last transformer layer
+        """
+        从最后一个transformer层获得上下文的token嵌入。
+        :param encodings:
+        :type encodings:
+        :param context_masks:
+        :type context_masks:
+        :param entity_masks:
+        :type entity_masks:
+        :param entity_sizes:
+        :type entity_sizes:
+        :param relations:
+        :type relations:
+        :param rel_masks:
+        :type rel_masks:
+        :return:
+        :rtype:
+        """
         context_masks = context_masks.float()
         h = self.bert(input_ids=encodings, attention_mask=context_masks)['last_hidden_state']
 

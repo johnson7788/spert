@@ -42,7 +42,7 @@ class SpERTTrainer(BaseTrainer):
 
     def train(self, train_path: str, valid_path: str, types_path: str, input_reader_cls: Type[BaseInputReader]):
         """
-
+        训练，读取数据，制作Dataset，计算训练step，加载模型
         :param train_path:
         :type train_path: 'data/datasets/conll04/conll04_train.json'
         :param valid_path:
@@ -83,31 +83,33 @@ class SpERTTrainer(BaseTrainer):
         #加载模型
         model = self._load_model(input_reader)
 
-        # SpERT is currently optimized on a single GPU and not thoroughly tested in a multi GPU setup
-        # If you still want to train SpERT on multiple GPUs, uncomment the following lines
-        # # parallelize model
+        # SpERT目前在单GPU上进行了优化，在多GPU设置中没有进行彻底的测试
+        # 如果你仍然想在多个GPU上训练SpERT，请取消对以下几行的注释
+        # # 并行模型
         # if self._device.type != 'cpu':
         #     model = torch.nn.DataParallel(model)
-
+        # 模型放到device上
         model.to(self._device)
 
-        # create optimizer
+        #创建优化器
         optimizer_params = self._get_optimizer_params(model)
         optimizer = AdamW(optimizer_params, lr=args.lr, weight_decay=args.weight_decay, correct_bias=False)
-        # create scheduler
+        # 创建学习率scheduler
         scheduler = transformers.get_linear_schedule_with_warmup(optimizer,
                                                                  num_warmup_steps=args.lr_warmup * updates_total,
                                                                  num_training_steps=updates_total)
-        # create loss function
+        # 损失函数，关系是二分类交叉熵损失
         rel_criterion = torch.nn.BCEWithLogitsLoss(reduction='none')
+        # 实体是交叉熵损失
         entity_criterion = torch.nn.CrossEntropyLoss(reduction='none')
+        # 初始化一个损失类
         compute_loss = SpERTLoss(rel_criterion, entity_criterion, model, optimizer, scheduler, args.max_grad_norm)
 
-        # eval validation set
+        # 评估数据集设置
         if args.init_eval:
             self._eval(model, validation_dataset, input_reader, 0, updates_epoch)
 
-        # train
+        # 开始训练
         for epoch in range(args.epochs):
             # train epoch
             self._train_epoch(model, compute_loss, optimizer, train_dataset, updates_epoch, epoch)
@@ -168,12 +170,22 @@ class SpERTTrainer(BaseTrainer):
         self._predict(model, dataset, input_reader)
 
     def _load_model(self, input_reader):
+        """
+
+        :param input_reader: 原始数据读取后
+        :type input_reader:
+        :return:
+        :rtype:
+        """
+        # model_class 是模型的信息
         model_class = models.get_model(self._args.model_type)
-
+        # 加载模型配置，
         config = BertConfig.from_pretrained(self._args.model_path, cache_dir=self._args.cache_path)
+        # 检查是否存在本地模型
         util.check_version(config, model_class, self._args.model_path)
-
+        # spert_version： '1.1'
         config.spert_version = model_class.VERSION
+        # 加载模型
         model = model_class.from_pretrained(self._args.model_path,
                                             config=config,
                                             # SpERT model parameters

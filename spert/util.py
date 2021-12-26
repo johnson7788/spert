@@ -211,6 +211,17 @@ def to_device(batch, device):
 
 
 def check_version(config, model_class, model_path):
+    """
+
+    :param config:
+    :type config:
+    :param model_class:
+    :type model_class:
+    :param model_path: 如果是本地模型，检查本地模型的配置， 'bert-base-cased'
+    :type model_path:
+    :return:
+    :rtype:
+    """
     if os.path.exists(model_path):
         model_path = model_path if model_path.endswith('.bin') else os.path.join(model_path, 'pytorch_model.bin')
         state_dict = torch.load(model_path, map_location=torch.device('cpu'))
