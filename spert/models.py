@@ -11,23 +11,25 @@ from spert import util
 def get_token(h: torch.tensor, x: torch.tensor, token: int):
     """
     获得特定的token嵌入（例如[CLS]）。
-    :param h:
+    :param h: 【batch_size, seq_length, emb_size] eg: [2,49,768]
     :type h:
     :param x:
     :type x:
-    :param token:
-    :type token:
+    :param token:  eg: 101, cls的id
+    :type token:int
     :return:
     :rtype:
     """
+    # emb_size： 768
     emb_size = h.shape[-1]
-
+    # 合并前2个维度
     token_h = h.view(-1, emb_size)
+    # 拉平x
     flat = x.contiguous().view(-1)
 
-    # get contextualized embedding of given token
+    # 获取给定token的上下文嵌入。获取token_h中是和flat中的tokenid等于给定token的向量
     token_h = token_h[flat == token, :]
-
+    # token_h： 【batch_size, embedding_dim]
     return token_h
 
 
@@ -148,14 +150,14 @@ class SpERT(BertPreTrainedModel):
 
     def _classify_entities(self, encodings, h, entity_masks, size_embeddings):
         """
-        最大池化实体候选跨度
-        :param encodings:
+        最大池化实体候选跨度, 然后进行对实体分类
+        :param encodings: [batch_size, seq_length] eg: [2,58]
         :type encodings:
-        :param h:
+        :param h: [batch_size, seq_length, embedding_size], eg: [2,58,768]
         :type h:
-        :param entity_masks: [batch_size, x, x], eg: [2,104,60]
+        :param entity_masks: [batch_size, entity_num, seq_length], eg: [2,104,60], 例如entity_num是可能的枚举的实体的数量
         :type entity_masks:
-        :param size_embeddings:
+        :param size_embeddings:  # 对实体的长度的embedding, [batch_size, entity_num实体个数, embedding_size], eg: [2,106,25]
         :type size_embeddings:
         :return:
         :rtype:
@@ -170,12 +172,14 @@ class SpERT(BertPreTrainedModel):
         # 获得作为候选上下文表示的cls token
         entity_ctx = get_token(h, encodings, self._cls_token)
 
-        # 创建候选表示，包括背景、最大集合跨度和尺寸嵌入
+        # 创建候选表示，包括背景、最大集合跨度和尺寸嵌入, 拼接这些表示，
+        # entity_ctx 是cls的表示
+        # entity_ctx.unsqueeze(1).repeat(1, entity_spans_pool.shape[1], 1) 表示给每个实体都是复制一个cls
         entity_repr = torch.cat([entity_ctx.unsqueeze(1).repeat(1, entity_spans_pool.shape[1], 1),
                                  entity_spans_pool, size_embeddings], dim=2)
         entity_repr = self.dropout(entity_repr)
-
-        # 对候选实体进行分类
+        # 对候选实体进行分类, entity_repr: 【batch_size, entity_num, embedding_size(拼接的向量)]
+        # entity_clf, shape: [batch_size, entity_num, entity_labels_num]
         entity_clf = self.entity_classifier(entity_repr)
 
         return entity_clf, entity_spans_pool
