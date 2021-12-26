@@ -17,17 +17,18 @@ class BaseInputReader(ABC):
         types = json.load(open(types_path), object_pairs_hook=OrderedDict)  # entity + relation types
 
         self._entity_types = OrderedDict()
+        # 实体id到名称的映射
         self._idx2entity_type = OrderedDict()
         self._relation_types = OrderedDict()
         self._idx2relation_type = OrderedDict()
 
-        # entities
-        # add 'None' entity type
+        # 实体， 给实体加入"无实体类型"
         none_entity_type = EntityType('None', 0, 'None', 'No Entity')
+        # 名字到实体实体别名列表的映射
         self._entity_types['None'] = none_entity_type
         self._idx2entity_type[0] = none_entity_type
 
-        # specified entity types
+        #指定实体类型
         for i, (key, v) in enumerate(types['entities'].items()):
             entity_type = EntityType(key, i + 1, v['short'], v['verbose'])
             self._entity_types[key] = entity_type

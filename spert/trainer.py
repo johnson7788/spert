@@ -71,6 +71,15 @@ class BaseTrainer:
             util.set_seed(args.seed)
 
     def _add_dataset_logging(self, *labels, data: Dict[str, List[str]]):
+        """
+
+        :param labels: 日志的名字
+        :type labels:
+        :param data:
+        :type data:
+        :return:
+        :rtype:
+        """
         for label in labels:
             dic = dict()
 

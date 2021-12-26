@@ -25,28 +25,46 @@ SCRIPT_PATH = os.path.dirname(os.path.realpath(__file__))
 
 
 class SpERTTrainer(BaseTrainer):
-    """ Joint entity and relation extraction training and evaluation """
-
+    """
+    联合实体和关系抽取训练和评估
+    """
     def __init__(self, args: argparse.Namespace):
+        """
+        args 是所有配置
+        :param args:
+        :type args:
+        """
         super().__init__(args)
-
-        # byte-pair encoding
+        # byte-pair encoding，加载tokenizer
         self._tokenizer = BertTokenizer.from_pretrained(args.tokenizer_path,
                                                         do_lower_case=args.lowercase,
                                                         cache_dir=args.cache_path)
 
     def train(self, train_path: str, valid_path: str, types_path: str, input_reader_cls: Type[BaseInputReader]):
+        """
+
+        :param train_path:
+        :type train_path: 'data/datasets/conll04/conll04_train.json'
+        :param valid_path:
+        :type valid_path: 'data/datasets/conll04/conll04_dev.json'
+        :param types_path: 实体和关系的名称，存储的文件位置
+        :type types_path: 'data/datasets/conll04/conll04_types.json'
+        :param input_reader_cls: 一个读取json格式的函数
+        :type input_reader_cls:
+        :return:
+        :rtype:
+        """
         args = self._args
         train_label, valid_label = 'train', 'valid'
 
-        self._logger.info("Datasets: %s, %s" % (train_path, valid_path))
-        self._logger.info("Model type: %s" % args.model_type)
+        self._logger.info("使用的训练集和开发集是: %s, %s" % (train_path, valid_path))
+        self._logger.info("模型类型是: %s" % args.model_type)
 
-        # create log csv files
+        # 创建日志csv文件
         self._init_train_logging(train_label)
         self._init_eval_logging(valid_label)
 
-        # read datasets
+        #读取数据集， types_path： 'data/datasets/conll04/conll04_types.json'
         input_reader = input_reader_cls(types_path, self._tokenizer, args.neg_entity_count,
                                         args.neg_relation_count, args.max_span_size, self._logger)
         train_dataset = input_reader.read(train_path, train_label)

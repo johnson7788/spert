@@ -19,7 +19,9 @@ def __train(run_args):
     :return:
     :rtype:
     """
+    # 初始化
     trainer = SpERTTrainer(run_args)
+    # 训练
     trainer.train(train_path=run_args.train_path, valid_path=run_args.valid_path,
                   types_path=run_args.types_path, input_reader_cls=input_reader.JsonInputReader)
 
