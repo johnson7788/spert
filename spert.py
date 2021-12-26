@@ -1,5 +1,4 @@
 import argparse
-
 from args import train_argparser, eval_argparser, predict_argparser
 from config_reader import process_configs
 from spert import input_reader
@@ -8,10 +7,18 @@ from spert.spert_trainer import SpERTTrainer
 
 def _train():
     arg_parser = train_argparser()
+    #解析配置
     process_configs(target=__train, arg_parser=arg_parser)
 
 
 def __train(run_args):
+    """
+    真正进行训练的配置
+    :param run_args:
+    :type run_args:
+    :return:
+    :rtype:
+    """
     trainer = SpERTTrainer(run_args)
     trainer.train(train_path=run_args.train_path, valid_path=run_args.valid_path,
                   types_path=run_args.types_path, input_reader_cls=input_reader.JsonInputReader)
@@ -40,10 +47,9 @@ def __predict(run_args):
 
 
 if __name__ == '__main__':
-    arg_parser = argparse.ArgumentParser(add_help=False)
-    arg_parser.add_argument('mode', type=str, help="Mode: 'train' or 'eval'")
+    arg_parser = argparse.ArgumentParser(description="实体关系联合抽取")
+    arg_parser.add_argument('mode', type=str, help="选择train, eval,还是predict")
     args, _ = arg_parser.parse_known_args()
-
     if args.mode == 'train':
         _train()
     elif args.mode == 'eval':

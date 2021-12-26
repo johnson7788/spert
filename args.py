@@ -2,80 +2,90 @@ import argparse
 
 
 def _add_common_args(arg_parser):
-    arg_parser.add_argument('--config', type=str)
+    """
+    常规参数
+    :param arg_parser:
+    :type arg_parser:
+    :return:
+    :rtype:
+    """
+    arg_parser.add_argument('--config', type=str, help="指定配置文件")
 
     # Input
-    arg_parser.add_argument('--types_path', type=str, help="Path to type specifications")
+    arg_parser.add_argument('--types_path', type=str, help="通往类型规格的路径")
 
     # Preprocessing
-    arg_parser.add_argument('--tokenizer_path', type=str, help="Path to tokenizer")
-    arg_parser.add_argument('--max_span_size', type=int, default=10, help="Maximum size of spans")
+    arg_parser.add_argument('--tokenizer_path', type=str, help="tokenizer的路径")
+    arg_parser.add_argument('--max_span_size', type=int, default=10, help="span跨度的最大大小")
     arg_parser.add_argument('--lowercase', action='store_true', default=False,
-                            help="If true, input is lowercased during preprocessing")
+                            help="如果为真，在预处理过程中，输入被小写")
     arg_parser.add_argument('--sampling_processes', type=int, default=4,
-                            help="Number of sampling processes. 0 = no multiprocessing for sampling")
+                            help="采样进程的数量。=0表示没有取样的多进程")
 
     # Model / Training / Evaluation
-    arg_parser.add_argument('--model_path', type=str, help="Path to directory that contains model checkpoints")
-    arg_parser.add_argument('--model_type', type=str, default="spert", help="Type of model")
+    arg_parser.add_argument('--model_path', type=str, help="包含模型checkpoint的目录的路径")
+    arg_parser.add_argument('--model_type', type=str, default="spert", help="模型的类型")
     arg_parser.add_argument('--cpu', action='store_true', default=False,
-                            help="If true, train/evaluate on CPU even if a CUDA device is available")
-    arg_parser.add_argument('--eval_batch_size', type=int, default=1, help="Evaluation/Prediction batch size")
+                            help="如果为真，即使有CUDA设备，也在CPU上进行训练/评估。")
+    arg_parser.add_argument('--eval_batch_size', type=int, default=1, help="评估/预测批次大小")
     arg_parser.add_argument('--max_pairs', type=int, default=1000,
-                            help="Maximum entity pairs to process during training/evaluation")
-    arg_parser.add_argument('--rel_filter_threshold', type=float, default=0.4, help="Filter threshold for relations")
-    arg_parser.add_argument('--size_embedding', type=int, default=25, help="Dimensionality of size embedding")
-    arg_parser.add_argument('--prop_drop', type=float, default=0.1, help="Probability of dropout used in SpERT")
-    arg_parser.add_argument('--freeze_transformer', action='store_true', default=False, help="Freeze BERT weights")
+                            help="训练/评估期间要处理的最大实体对")
+    arg_parser.add_argument('--rel_filter_threshold', type=float, default=0.4, help="关系的过滤阈值")
+    arg_parser.add_argument('--size_embedding', type=int, default=25, help="维度嵌入的维度")
+    arg_parser.add_argument('--prop_drop', type=float, default=0.1, help="SpERT中使用的dropout概率")
+    arg_parser.add_argument('--freeze_transformer', action='store_true', default=False, help="是否冻结 BERT 权重")
     arg_parser.add_argument('--no_overlapping', action='store_true', default=False,
-                            help="If true, do not evaluate on overlapping entities "
-                                 "and relations with overlapping entities")
+                            help="如果为真，则不对重叠的实体和有重叠的实体的关系进行评估")
 
     # Misc
-    arg_parser.add_argument('--seed', type=int, default=None, help="Seed")
+    arg_parser.add_argument('--seed', type=int, default=None, help="随机数种子")
     arg_parser.add_argument('--cache_path', type=str, default=None,
-                            help="Path to cache transformer models (for HuggingFace transformers library)")
-    arg_parser.add_argument('--debug', action='store_true', default=False, help="Debugging mode on/off")
+                            help="缓存transformer模型的路径（用于HuggingFacetransformer库）。")
+    arg_parser.add_argument('--debug', action='store_true', default=False, help="debugging模式开/关")
 
 
 def _add_logging_args(arg_parser):
-    arg_parser.add_argument('--label', type=str, help="Label of run. Used as the directory name of logs/models")
-    arg_parser.add_argument('--log_path', type=str, help="Path do directory where training/evaluation logs are stored")
+    arg_parser.add_argument('--label', type=str, help="运行的标签。用作日志/模型的目录名称")
+    arg_parser.add_argument('--log_path', type=str, help="储存训练/评估日志的目录的路径")
     arg_parser.add_argument('--store_predictions', action='store_true', default=False,
-                            help="If true, store predictions on disc (in log directory)")
+                            help="如果为真，将预测结果存储在磁盘上（在日志目录中）。")
     arg_parser.add_argument('--store_examples', action='store_true', default=False,
-                            help="If true, store evaluation examples on disc (in log directory)")
+                            help="如果为真，将评估实例存储在磁盘上（在日志目录中）。")
     arg_parser.add_argument('--example_count', type=int, default=None,
-                            help="Count of evaluation example to store (if store_examples == True)")
+                            help="要存储的评估实例的数量（如果store_examples == True）。")
 
 
 def train_argparser():
+    """
+    训练的参数
+    :return:
+    :rtype:
+    """
     arg_parser = argparse.ArgumentParser()
-
     # Input
-    arg_parser.add_argument('--train_path', type=str, help="Path to train dataset")
-    arg_parser.add_argument('--valid_path', type=str, help="Path to validation dataset")
+    arg_parser.add_argument('--train_path', type=str, help="训练数据的路径")
+    arg_parser.add_argument('--valid_path', type=str, help="验证集路径")
 
     # Logging
-    arg_parser.add_argument('--save_path', type=str, help="Path to directory where model checkpoints are stored")
+    arg_parser.add_argument('--save_path', type=str, help="存储模型checkpoint的目录的路径")
     arg_parser.add_argument('--init_eval', action='store_true', default=False,
-                            help="If true, evaluate validation set before training")
+                            help="如果为真，在训练前评估验证集")
     arg_parser.add_argument('--save_optimizer', action='store_true', default=False,
-                            help="Save optimizer alongside model")
-    arg_parser.add_argument('--train_log_iter', type=int, default=100, help="Log training process every x iterations")
+                            help="将优化器与模型一起保存")
+    arg_parser.add_argument('--train_log_iter', type=int, default=100, help="每x次迭代记录训练过程")
     arg_parser.add_argument('--final_eval', action='store_true', default=False,
-                            help="Evaluate the model only after training, not at every epoch")
+                            help="只在训练后评估模型，而不是在每个epoch都评估")
 
     # Model / Training
-    arg_parser.add_argument('--train_batch_size', type=int, default=2, help="Training batch size")
+    arg_parser.add_argument('--train_batch_size', type=int, default=2, help="训练批次大小")
     arg_parser.add_argument('--epochs', type=int, default=20, help="Number of epochs")
     arg_parser.add_argument('--neg_entity_count', type=int, default=100,
-                            help="Number of negative entity samples per document (sentence)")
+                            help="每份文件（句子）的负面实体样本数。")
     arg_parser.add_argument('--neg_relation_count', type=int, default=100,
-                            help="Number of negative relation samples per document (sentence)")
+                            help="每份文件（句子）的负面关系样本数。")
     arg_parser.add_argument('--lr', type=float, default=5e-5, help="Learning rate")
     arg_parser.add_argument('--lr_warmup', type=float, default=0.1,
-                            help="Proportion of total train iterations to warmup in linear increase/decrease schedule")
+                            help="在线性增加/减少计划中，warmup训练占总训练迭代的比例")
     arg_parser.add_argument('--weight_decay', type=float, default=0.01, help="Weight decay to apply")
     arg_parser.add_argument('--max_grad_norm', type=float, default=1.0, help="Maximum gradient norm")
 

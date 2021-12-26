@@ -4,6 +4,7 @@ import multiprocessing as mp
 
 def process_configs(target, arg_parser):
     args, _ = arg_parser.parse_known_args()
+    # 多进程
     ctx = mp.get_context('spawn')
 
     for run_args, _run_config, _run_repeat in _yield_configs(arg_parser, args):
@@ -13,6 +14,13 @@ def process_configs(target, arg_parser):
 
 
 def _read_config(path):
+    """
+    解析配置文件
+    :param path:  'configs/example_train.conf'
+    :type path:
+    :return: list， 配置列表
+    :rtype:
+    """
     lines = open(path).readlines()
 
     runs = []
@@ -46,6 +54,13 @@ def _read_config(path):
 
 
 def _convert_config(config):
+    """
+    变成命令格式的参数
+    :param config:
+    :type config:
+    :return:
+    :rtype:
+    """
     config_list = []
     for k, v in config.items():
         if v.lower() == 'true':
@@ -64,7 +79,7 @@ def _yield_configs(arg_parser, args, verbose=True):
 
         for run_repeat, run_config in config:
             print("-" * 50)
-            print("Config:")
+            print("配置如下:")
             print(run_config)
 
             args_copy = copy.deepcopy(args)
@@ -77,11 +92,11 @@ def _yield_configs(arg_parser, args, verbose=True):
                 if v.lower() == 'false':
                     run_args_dict[k] = False
 
-            print("Repeat %s times" % run_repeat)
+            print("需要迭代 %s 次" % run_repeat)
             print("-" * 50)
 
             for iteration in range(run_repeat):
-                _print("Iteration %s" % iteration)
+                _print("迭代 %s" % iteration)
                 _print("-" * 50)
 
                 yield run_args, run_config, run_repeat
