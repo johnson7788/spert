@@ -135,9 +135,21 @@ class JsonInputReader(BaseInputReader):
         super().__init__(types_path, tokenizer, neg_entity_count, neg_rel_count, max_span_size, logger)
 
     def read(self, dataset_path, dataset_label):
+        """
+        读取数据
+        :param dataset_path:  'data/datasets/conll04/conll04_train.json'
+        :type dataset_path:
+        :param dataset_label: 'train'
+        :type dataset_label:
+        :return:
+        :rtype:
+        """
+        # 初始化一个dataset
         dataset = Dataset(dataset_label, self._relation_types, self._entity_types, self._neg_entity_count,
                           self._neg_rel_count, self._max_span_size)
+        # dataset赋值
         self._parse_dataset(dataset_path, dataset)
+        # daset放到self中
         self._datasets[dataset_label] = dataset
         return dataset
 
@@ -153,6 +165,7 @@ class JsonInputReader(BaseInputReader):
         """
         documents = json.load(open(dataset_path))
         for document in tqdm(documents, desc="开始读取数据集 '%s'" % dataset.label):
+            # 解析每条数据，document代表每个句子
             self._parse_document(document, dataset)
 
     def _parse_document(self, doc, dataset) -> Document:
@@ -181,9 +194,22 @@ class JsonInputReader(BaseInputReader):
         # eg: entities: 返回文档的实体
         entities = self._parse_entities(jentities, doc_tokens, dataset)
         #解析关系， 通过解析出来的实体和原书记讲的关系
+        # eg: relations = {list: 1} [<spert.entities.Relation object at 0x113103100>]
+        #  0 = {Relation} <spert.entities.Relation object at 0x113103100>
+        #   first_entity = {Entity} Havana
+        #   head_entity = {Entity} Radio Reloj Network
+        #   relation_type = {RelationType} <spert.entities.RelationType object at 0x14b4dae80>
+        #   reverse = {bool} True
+        #   second_entity = {Entity} Radio Reloj Network
+        #   tail_entity = {Entity} Havana
         relations = self._parse_relations(jrelations, entities, dataset)
 
-        # create document
+        #document : document = {Document} <spert.entities.Document object at 0x118fc3e80>
+             # doc_id = {int} 0
+             # encoding = {list: 39} [101, 21158, 169, 16409, 18220, 1116, 112, 158, 119, 156, 119, 17067, 1116, 6177, 17437, 23485, 17175, 1568, 10973, 24400, 1604, 1580, 1527, 16092, 2664, 11336, 2858, 3361, 3998, 1107, 2124, 13075, 1568, 14748, 1942, 1492, 13650, 5706, 102]
+             # entities = {list: 5} [<spert.entities.Entity object at 0x17586c190>, <spert.entities.Entity object at 0x17586c070>, <spert.entities.Entity object at 0x17586c1c0>, <spert.entities.Entity object at 0x17586c220>, <spert.entities.Entity object at 0x17586c280>]
+             # relations = {list: 1} [<spert.entities.Relation object at 0x17586c2e0>]
+             # tokens = {TokenSpan: 20} <spert.entities.TokenSpan object at 0x177a60550>
         document = dataset.create_document(doc_tokens, entities, relations, doc_encoding)
 
         return document

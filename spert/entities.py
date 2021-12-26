@@ -409,6 +409,19 @@ class Dataset(TorchDataset):
         return token
 
     def create_document(self, tokens, entity_mentions, relations, doc_encoding) -> Document:
+        """
+
+        :param tokens:
+        :type tokens:
+        :param entity_mentions:
+        :type entity_mentions:
+        :param relations:
+        :type relations:
+        :param doc_encoding:
+        :type doc_encoding:
+        :return:
+        :rtype:
+        """
         document = Document(self._doc_id, tokens, entity_mentions, relations, doc_encoding)
         self._documents[self._doc_id] = document
         self._doc_id += 1
