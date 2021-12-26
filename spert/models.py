@@ -92,6 +92,8 @@ class SpERT(BertPreTrainedModel):
 
         # 实体分类，实体的大小的embedding
         size_embeddings = self.size_embeddings(entity_sizes)  # embed entity candidate sizes
+        # entity_clf [ batch_size, entity_num, entity_label_num], eg: [2,102,5]
+        # entity_spans_pool [ batch_size, entity_num, embedding_size], eg: [2,102,768]
         entity_clf, entity_spans_pool = self._classify_entities(encodings, h, entity_masks, size_embeddings)
 
         # 关系分类
@@ -99,10 +101,10 @@ class SpERT(BertPreTrainedModel):
         rel_clf = torch.zeros([batch_size, relations.shape[1], self._relation_types]).to(
             self.rel_classifier.weight.device)
 
-        # obtain relation logits
-        # chunk processing to reduce memory usage
+        # 获取关系的logits
+        # 分块处理以减少内存使用
         for i in range(0, relations.shape[1], self._max_pairs):
-            # classify relation candidates
+            # 对关系候选者进行分类
             chunk_rel_logits = self._classify_relations(entity_spans_pool, size_embeddings,
                                                         relations, rel_masks, h_large, i)
             rel_clf[:, i:i + self._max_pairs, :] = chunk_rel_logits
