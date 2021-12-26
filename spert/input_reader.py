@@ -14,6 +14,23 @@ from spert.opt import spacy
 class BaseInputReader(ABC):
     def __init__(self, types_path: str, tokenizer: BertTokenizer, neg_entity_count: int = None,
                  neg_rel_count: int = None, max_span_size: int = None, logger: Logger = None, **kwargs):
+        """
+
+        :param types_path:
+        :type types_path:
+        :param tokenizer:
+        :type tokenizer:
+        :param neg_entity_count:  实体负样本数量
+        :type neg_entity_count: 100
+        :param neg_rel_count:  关系负样本数量
+        :type neg_rel_count:  100
+        :param max_span_size: 最大实体跨度
+        :type max_span_size: 10
+        :param logger:  日志记录器函数
+        :type logger:
+        :param kwargs: 其它参数
+        :type kwargs:
+        """
         types = json.load(open(types_path), object_pairs_hook=OrderedDict)  # entity + relation types
 
         self._entity_types = OrderedDict()
@@ -22,30 +39,30 @@ class BaseInputReader(ABC):
         self._relation_types = OrderedDict()
         self._idx2relation_type = OrderedDict()
 
-        # 实体， 给实体加入"无实体类型"
+        # 实体， 给实体加入"无实体类型"， 实体的identifier， 实体的索引的位置，short_name和全名，'No Entity'是全名
         none_entity_type = EntityType('None', 0, 'None', 'No Entity')
         # 名字到实体实体别名列表的映射
         self._entity_types['None'] = none_entity_type
         self._idx2entity_type[0] = none_entity_type
 
-        #指定实体类型
+        #指定实体类型, 都赋值给_entity_types和_idx2entity_type，方便后期使用
         for i, (key, v) in enumerate(types['entities'].items()):
             entity_type = EntityType(key, i + 1, v['short'], v['verbose'])
             self._entity_types[key] = entity_type
             self._idx2entity_type[i + 1] = entity_type
 
-        # relations
+        # 关系，和实体一样，加入无关系类型
         # add 'None' relation type
         none_relation_type = RelationType('None', 0, 'None', 'No Relation')
         self._relation_types['None'] = none_relation_type
         self._idx2relation_type[0] = none_relation_type
 
-        # specified relation types
+        # 关系类型的存储
         for i, (key, v) in enumerate(types['relations'].items()):
             relation_type = RelationType(key, i + 1, v['short'], v['verbose'], v['symmetric'])
             self._relation_types[key] = relation_type
             self._idx2relation_type[i + 1] = relation_type
-
+        #负样本
         self._neg_entity_count = neg_entity_count
         self._neg_rel_count = neg_rel_count
         self._max_span_size = max_span_size
@@ -54,7 +71,7 @@ class BaseInputReader(ABC):
 
         self._tokenizer = tokenizer
         self._logger = logger
-
+        # 单词表大小
         self._vocabulary_size = tokenizer.vocab_size
 
     @abstractmethod
@@ -125,8 +142,17 @@ class JsonInputReader(BaseInputReader):
         return dataset
 
     def _parse_dataset(self, dataset_path, dataset):
+        """
+        读取数据集
+        :param dataset_path: 'data/datasets/conll04/conll04_train.json'
+        :type dataset_path:
+        :param dataset: 初始化的dataset格式
+        :type dataset:
+        :return:
+        :rtype:
+        """
         documents = json.load(open(dataset_path))
-        for document in tqdm(documents, desc="Parse dataset '%s'" % dataset.label):
+        for document in tqdm(documents, desc="开始读取数据集 '%s'" % dataset.label):
             self._parse_document(document, dataset)
 
     def _parse_document(self, doc, dataset) -> Document:
@@ -209,6 +235,15 @@ class JsonPredictionInputReader(BaseInputReader):
             self._parse_document(document, dataset)
 
     def _parse_document(self, document, dataset) -> Document:
+        """
+
+        :param document:
+        :type document:
+        :param dataset:
+        :type dataset:
+        :return:
+        :rtype:
+        """
         if type(document) == list:
             jtokens = document
         elif type(document) == dict:
@@ -226,23 +261,37 @@ class JsonPredictionInputReader(BaseInputReader):
 
 
 def _parse_tokens(jtokens, dataset, tokenizer):
+    """
+
+    :param jtokens: 每个tokens, eg: ['Newspaper', '`', 'Explains', "'", 'U.S.', 'Interests', 'Section', 'Events', 'FL1402001894', 'Havana', 'Radio', 'Reloj', 'Network', 'in', 'Spanish', '2100', 'GMT', '13', 'Feb', '94']
+    :type jtokens:
+    :param dataset:
+    :type dataset:
+    :param tokenizer: tokenizer
+    :type tokenizer:
+    :return:
+    :rtype:
+    """
     doc_tokens = []
 
-    # full document encoding including special tokens ([CLS] and [SEP]) and byte-pair encodings of original tokens
+    # 全文档编码，包括特殊token（[CLS]和[SEP]）和原始token的字节对编码 ，doc_encoding是CLS
     doc_encoding = [tokenizer.convert_tokens_to_ids('[CLS]')]
 
     # parse tokens
     for i, token_phrase in enumerate(jtokens):
+        # token变成id, token_encoding: [21158]
         token_encoding = tokenizer.encode(token_phrase, add_special_tokens=False)
         if not token_encoding:
+            # 如果发现token_encoding返回为空，那么这个token为UNK
             token_encoding = [tokenizer.convert_tokens_to_ids('[UNK]')]
+        # span的开始和结束, (CLS, CLS_ID, tokenid), 每个token可能被tokenizer多个，例如一个英文单词encode后变成多个id
         span_start, span_end = (len(doc_encoding), len(doc_encoding) + len(token_encoding))
-
+        # 创建一个token的实例
         token = dataset.create_token(i, span_start, span_end, token_phrase)
-
+        # 完成一个token， 放到doc_tokens中保存
         doc_tokens.append(token)
         doc_encoding += token_encoding
-
+    #解析完成后，加上一个SEP结束
     doc_encoding += [tokenizer.convert_tokens_to_ids('[SEP]')]
-
+    # eg: doc_encoding: [101, 21158, 169, 16409, 18220, 1116, 112, 158, 119, 156, 119, 17067, 1116, 6177, 17437, 23485, 17175, 1568, 10973, 24400, 1604, 1580, 1527, 16092, 2664, 11336, 2858, 3361, 3998, 1107, 2124, 13075, 1568, 14748, 1942, 1492, 13650, 5706, 102]
     return doc_tokens, doc_encoding

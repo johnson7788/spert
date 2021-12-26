@@ -82,11 +82,27 @@ class EntityType:
 
 class Token:
     def __init__(self, tid: int, index: int, span_start: int, span_end: int, phrase: str):
-        self._tid = tid  # ID within the corresponding dataset
-        self._index = index  # original token index in document
-
-        self._span_start = span_start  # start of token span in document (inclusive)
+        """
+        一个Token
+        :param tid:
+        :type tid:
+        :param index:
+        :type index:
+        :param span_start:
+        :type span_start:
+        :param span_end:
+        :type span_end:
+        :param phrase:
+        :type phrase:
+        """
+        # 相应数据集内的ID
+        self._tid = tid
+        #  文件中的原始token索引
+        self._index = index
+        # 文件中token跨度的开始（包括）。
+        self._span_start = span_start
         self._span_end = span_end  # end of token span in document (exclusive)
+        # 单词， eg： 'Newspaper'
         self._phrase = phrase
 
     @property
@@ -333,9 +349,23 @@ class BatchIterator:
 class Dataset(TorchDataset):
     TRAIN_MODE = 'train'
     EVAL_MODE = 'eval'
-
     def __init__(self, label, rel_types, entity_types, neg_entity_count,
                  neg_rel_count, max_span_size):
+        """
+
+        :param label: eg： train
+        :type label:
+        :param rel_types: 所有关系的类型
+        :type rel_types:
+        :param entity_types: 所有实体的类型
+        :type entity_types:
+        :param neg_entity_count:负样本数，实体
+        :type neg_entity_count:
+        :param neg_rel_count:
+        :type neg_rel_count:
+        :param max_span_size:
+        :type max_span_size:
+        """
         self._label = label
         self._rel_types = rel_types
         self._entity_types = entity_types
@@ -343,7 +373,7 @@ class Dataset(TorchDataset):
         self._neg_rel_count = neg_rel_count
         self._max_span_size = max_span_size
         self._mode = Dataset.TRAIN_MODE
-
+        #
         self._documents = OrderedDict()
         self._entities = OrderedDict()
         self._relations = OrderedDict()
@@ -361,6 +391,19 @@ class Dataset(TorchDataset):
         return BatchIterator(self.relations, batch_size, order=order, truncate=truncate)
 
     def create_token(self, idx, span_start, span_end, phrase) -> Token:
+        """
+
+        :param idx:
+        :type idx:
+        :param span_start:
+        :type span_start:
+        :param span_end:
+        :type span_end:
+        :param phrase:
+        :type phrase:
+        :return:
+        :rtype:
+        """
         token = Token(self._tid, idx, span_start, span_end, phrase)
         self._tid += 1
         return token
