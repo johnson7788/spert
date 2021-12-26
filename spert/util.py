@@ -203,6 +203,15 @@ def get_span_tokens(tokens, span):
 
 
 def to_device(batch, device):
+    """
+    batch中的每个元素都放到device上
+    :param batch:
+    :type batch:
+    :param device:
+    :type device:
+    :return:
+    :rtype:
+    """
     converted_batch = dict()
     for key in batch.keys():
         converted_batch[key] = batch[key].to(device)

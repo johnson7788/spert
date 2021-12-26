@@ -232,14 +232,15 @@ class SpERTTrainer(BaseTrainer):
         total = dataset.document_count // self._args.train_batch_size
         for batch in tqdm(data_loader, total=total, desc='训练 epoch %s' % epoch):
             model.train()
+            # batch: dict_keys(['encodings', 'context_masks', 'entity_masks', 'entity_sizes', 'entity_types', 'rels', 'rel_masks', 'rel_types', 'entity_sample_masks', 'rel_sample_masks'])
             batch = util.to_device(batch, self._device)
 
-            # forward step
+            # 前向step
             entity_logits, rel_logits = model(encodings=batch['encodings'], context_masks=batch['context_masks'],
                                               entity_masks=batch['entity_masks'], entity_sizes=batch['entity_sizes'],
                                               relations=batch['rels'], rel_masks=batch['rel_masks'])
 
-            # compute loss and optimize parameters
+            # 计算损失，优化参数
             batch_loss = compute_loss.compute(entity_logits=entity_logits, rel_logits=rel_logits,
                                               rel_types=batch['rel_types'], entity_types=batch['entity_types'],
                                               entity_sample_masks=batch['entity_sample_masks'],

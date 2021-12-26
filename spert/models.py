@@ -9,7 +9,17 @@ from spert import util
 
 
 def get_token(h: torch.tensor, x: torch.tensor, token: int):
-    """ Get specific token embedding (e.g. [CLS]) """
+    """
+    获得特定的token嵌入（例如[CLS]）。
+    :param h:
+    :type h:
+    :param x:
+    :type x:
+    :param token:
+    :type token:
+    :return:
+    :rtype:
+    """
     emb_size = h.shape[-1]
 
     token_h = h.view(-1, emb_size)
@@ -35,6 +45,7 @@ class SpERT(BertPreTrainedModel):
         # 新建分类层
         self.rel_classifier = nn.Linear(config.hidden_size * 3 + size_embedding * 2, relation_types)
         self.entity_classifier = nn.Linear(config.hidden_size * 2 + size_embedding, entity_types)
+        # 实体的大小进行embedding
         self.size_embeddings = nn.Embedding(100, size_embedding)
         self.dropout = nn.Dropout(prop_drop)
 
@@ -56,18 +67,18 @@ class SpERT(BertPreTrainedModel):
     def _forward_train(self, encodings: torch.tensor, context_masks: torch.tensor, entity_masks: torch.tensor,
                        entity_sizes: torch.tensor, relations: torch.tensor, rel_masks: torch.tensor):
         """
-        从最后一个transformer层获得上下文的token嵌入。
-        :param encodings:
+        从最后一个transformer层获得上下文的token嵌入。 训练
+        :param encodings: 【batch_size,
         :type encodings:
-        :param context_masks:
+        :param context_masks:【batch_size,
         :type context_masks:
-        :param entity_masks:
+        :param entity_masks:【batch_size,
         :type entity_masks:
-        :param entity_sizes:
+        :param entity_sizes:【batch_size,
         :type entity_sizes:
-        :param relations:
+        :param relations:【batch_size,
         :type relations:
-        :param rel_masks:
+        :param rel_masks:【batch_size,
         :type rel_masks:
         :return:
         :rtype:
@@ -77,11 +88,11 @@ class SpERT(BertPreTrainedModel):
 
         batch_size = encodings.shape[0]
 
-        # classify entities
+        # 实体分类，实体的大小的embedding
         size_embeddings = self.size_embeddings(entity_sizes)  # embed entity candidate sizes
         entity_clf, entity_spans_pool = self._classify_entities(encodings, h, entity_masks, size_embeddings)
 
-        # classify relations
+        # 关系分类
         h_large = h.unsqueeze(1).repeat(1, max(min(relations.shape[1], self._max_pairs), 1), 1, 1)
         rel_clf = torch.zeros([batch_size, relations.shape[1], self._relation_types]).to(
             self.rel_classifier.weight.device)
@@ -136,20 +147,35 @@ class SpERT(BertPreTrainedModel):
         return entity_clf, rel_clf, relations
 
     def _classify_entities(self, encodings, h, entity_masks, size_embeddings):
-        # max pool entity candidate spans
+        """
+        最大池化实体候选跨度
+        :param encodings:
+        :type encodings:
+        :param h:
+        :type h:
+        :param entity_masks: [batch_size, x, x], eg: [2,104,60]
+        :type entity_masks:
+        :param size_embeddings:
+        :type size_embeddings:
+        :return:
+        :rtype:
+        """
+        # eg: entity_masks增加一个维度，然盘是否为0， m维度 eg: [2,104,60,1]
         m = (entity_masks.unsqueeze(-1) == 0).float() * (-1e30)
+        #
         entity_spans_pool = m + h.unsqueeze(1).repeat(1, entity_masks.shape[1], 1, 1)
+        # 对快读进行最大池化
         entity_spans_pool = entity_spans_pool.max(dim=2)[0]
 
-        # get cls token as candidate context representation
+        # 获得作为候选上下文表示的cls token
         entity_ctx = get_token(h, encodings, self._cls_token)
 
-        # create candidate representations including context, max pooled span and size embedding
+        # 创建候选表示，包括背景、最大集合跨度和尺寸嵌入
         entity_repr = torch.cat([entity_ctx.unsqueeze(1).repeat(1, entity_spans_pool.shape[1], 1),
                                  entity_spans_pool, size_embeddings], dim=2)
         entity_repr = self.dropout(entity_repr)
 
-        # classify entity candidates
+        # 对候选实体进行分类
         entity_clf = self.entity_classifier(entity_repr)
 
         return entity_clf, entity_spans_pool
@@ -235,8 +261,10 @@ class SpERT(BertPreTrainedModel):
 
     def forward(self, *args, inference=False, **kwargs):
         if not inference:
+            # 训练模式
             return self._forward_train(*args, **kwargs)
         else:
+            #推理模式
             return self._forward_inference(*args, **kwargs)
 
 
