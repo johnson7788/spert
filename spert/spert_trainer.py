@@ -69,16 +69,18 @@ class SpERTTrainer(BaseTrainer):
                                         args.neg_relation_count, args.max_span_size, self._logger)
         train_dataset = input_reader.read(train_path, train_label)
         validation_dataset = input_reader.read(valid_path, valid_label)
+        # 打印数据集统计信息
         self._log_datasets(input_reader)
-
+        # 训练的样本的数量eg: 922
         train_sample_count = train_dataset.document_count
+        # 训练的epcoh， eg: updates_epoch: 461
         updates_epoch = train_sample_count // args.train_batch_size
+        # eg: 9220
         updates_total = updates_epoch * args.epochs
+        self._logger.info("每个epoch需要更新的step数量是: %s" % updates_epoch)
+        self._logger.info("总共需要更新的steps数量: %s" % updates_total)
 
-        self._logger.info("Updates per epoch: %s" % updates_epoch)
-        self._logger.info("Updates total: %s" % updates_total)
-
-        # load model
+        #加载模型
         model = self._load_model(input_reader)
 
         # SpERT is currently optimized on a single GPU and not thoroughly tested in a multi GPU setup
@@ -380,22 +382,36 @@ class SpERTTrainer(BaseTrainer):
                       epoch, iteration, global_iteration)
 
     def _log_datasets(self, input_reader):
-        self._logger.info("Relation type count: %s" % input_reader.relation_type_count)
-        self._logger.info("Entity type count: %s" % input_reader.entity_type_count)
+        """
+        打印数据集信息
+        :param input_reader:
+        input_reader = {JsonInputReader} Dataset: <spert.entities.Dataset object at 0x13ea35580>\n<spert.entities.Dataset object at 0x13ea35580>Dataset: <spert.entities.Dataset object at 0x14e902ee0>\n<spert.entities.Dataset object at 0x14e902ee0>
+             datasets = {dict: 2} {'train': <spert.entities.Dataset object at 0x13ea35580>, 'valid': <spert.entities.Dataset object at 0x14e902ee0>}
+             entity_type_count = {int} 5
+             entity_types = {OrderedDict: 5} OrderedDict([('None', <spert.entities.EntityType object at 0x13ea35af0>), ('Loc', <spert.entities.EntityType object at 0x13ee2a070>), ('Org', <spert.entities.EntityType object at 0x13ee2a220>), ('Peop', <spert.entities.EntityType object at 0x13ee2a4c0>), ('Other', <spert.entities.EntityType object at 0x13ee2a340>)])
+             relation_type_count = {int} 6
+             relation_types = {OrderedDict: 6} OrderedDict([('None', <spert.entities.RelationType object at 0x13ee2a490>), ('Work_For', <spert.entities.RelationType object at 0x13ee2af40>), ('Kill', <spert.entities.RelationType object at 0x13ee2af10>), ('OrgBased_In', <spert.entities.RelationType object at 0x13ee2ae80>), ('Live_In', <spert.entities.RelationType object at 0x13ee2afa0>), ('Located_In', <spert.entities.RelationType object at 0x13ee2a0a0>)])
+             vocabulary_size = {int} 28996
+        :type input_reader:
+        :return:
+        :rtype:
+        """
+        self._logger.info("关系类型的数量: %s" % input_reader.relation_type_count)
+        self._logger.info("实体类型数量: %s" % input_reader.entity_type_count)
 
-        self._logger.info("Entities:")
+        self._logger.info("实体信息:")
         for e in input_reader.entity_types.values():
             self._logger.info(e.verbose_name + '=' + str(e.index))
 
-        self._logger.info("Relations:")
+        self._logger.info("关系信息:")
         for r in input_reader.relation_types.values():
             self._logger.info(r.verbose_name + '=' + str(r.index))
-
+        self._logger.info(f"每个数据集收集的信息统计：")
         for k, d in input_reader.datasets.items():
-            self._logger.info('Dataset: %s' % k)
-            self._logger.info("Document count: %s" % d.document_count)
-            self._logger.info("Relation count: %s" % d.relation_count)
-            self._logger.info("Entity count: %s" % d.entity_count)
+            self._logger.info('数据集: %s' % k)
+            self._logger.info("文档数量: %s" % d.document_count)
+            self._logger.info("关系数量: %s" % d.relation_count)
+            self._logger.info("实体数量: %s" % d.entity_count)
 
     def _init_train_logging(self, label):
         self._add_dataset_logging(label,
