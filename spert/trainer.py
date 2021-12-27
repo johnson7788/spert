@@ -18,19 +18,20 @@ SCRIPT_PATH = os.path.dirname(os.path.realpath(__file__))
 
 
 class BaseTrainer:
-    """ Trainer base class with common methods """
-
+    """
+    训练的基类，包含一些通用方法
+    """
     def __init__(self, args: argparse.Namespace):
         self._args = args
         self._debug = self._args.debug
-
+        # run_key: '2021-12-27_15:38:35.363129'
         run_key = str(datetime.datetime.now()).replace(' ', '_')
-
+        # 如果发现了save_path，那么创建一个保存模型的目录，包含日期的
         if hasattr(args, 'save_path'):
             self._save_path = os.path.join(self._args.save_path, self._args.label, run_key)
             util.create_directories_dir(self._save_path)
 
-        # logging
+        # 创建保存日志的目录
         if hasattr(args, 'log_path'):
             self._log_path = os.path.join(self._args.log_path, self._args.label, run_key)
             util.create_directories_dir(self._log_path)

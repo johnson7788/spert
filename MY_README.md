@@ -136,7 +136,7 @@ Predict: 100%|██████████| 3/3 [00:18<00:00,  6.11s/it]
 │   │   │   ├── conll04_test.json
 │   │   │   ├── conll04_train.json
 │   │   │   ├── conll04_train_dev.json
-│   │   │   └── conll04_types.json
+│   │   │   └── conll04_types.json  保存实体和关系的类型信息
 │   │   └── scierc
 │   ├── log 保存日志
 │   ├── models  预训练模型
@@ -178,5 +178,9 @@ Predict: 100%|██████████| 3/3 [00:18<00:00,  6.11s/it]
 │   └── util.py
 └── spert.py  主程序
 ```
+
+# 运行流程
+spert.py：__train: 初始化模型类SpERTTrainer，初始化模型保存路径，日志路径，日志级别，加载self._tokenizer等
+
 
 # 中文的数据集测试

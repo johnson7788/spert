@@ -9,7 +9,6 @@ def _add_common_args(arg_parser):
     :rtype:
     """
     arg_parser.add_argument('--config', type=str, help="指定配置文件")
-
     # Input
     arg_parser.add_argument('--types_path', type=str, help="通往类型规格的路径")
 

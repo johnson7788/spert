@@ -22,9 +22,15 @@ def create_directories_file(f):
 
 
 def create_directories_dir(d):
+    """
+    创建一个目录
+    :param d:
+    :type d:
+    :return:
+    :rtype:
+    """
     if d and not os.path.exists(d):
         os.makedirs(d)
-
     return d
 
 
