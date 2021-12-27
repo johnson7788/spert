@@ -111,10 +111,10 @@ class SpERTTrainer(BaseTrainer):
 
         # 开始训练
         for epoch in range(args.epochs):
-            # train epoch
+            # 训练epoch
             self._train_epoch(model, compute_loss, optimizer, train_dataset, updates_epoch, epoch)
 
-            # eval validation sets
+            # 评估模型
             if not args.final_eval or (epoch == args.epochs - 1):
                 self._eval(model, validation_dataset, input_reader, epoch + 1, updates_epoch)
 
@@ -125,8 +125,8 @@ class SpERTTrainer(BaseTrainer):
                          optimizer=optimizer if self._args.save_optimizer else None, extra=extra,
                          include_iteration=False, name='final_model')
 
-        self._logger.info("Logged in: %s" % self._log_path)
-        self._logger.info("Saved in: %s" % self._save_path)
+        self._logger.info("日志保存至: %s" % self._log_path)
+        self._logger.info("模型保存至: %s" % self._save_path)
         self._close_summary_writer()
 
     def eval(self, dataset_path: str, types_path: str, input_reader_cls: Type[BaseInputReader]):
@@ -246,10 +246,10 @@ class SpERTTrainer(BaseTrainer):
                                               entity_sample_masks=batch['entity_sample_masks'],
                                               rel_sample_masks=batch['rel_sample_masks'])
 
-            # logging
+            # 日志
             iteration += 1
             global_iteration = epoch * updates_epoch + iteration
-
+            # 是否记录日志
             if global_iteration % self._args.train_log_iter == 0:
                 self._log_train(optimizer, batch_loss, epoch, iteration, global_iteration, dataset.label)
 
@@ -257,10 +257,27 @@ class SpERTTrainer(BaseTrainer):
 
     def _eval(self, model: torch.nn.Module, dataset: Dataset, input_reader: BaseInputReader,
               epoch: int = 0, updates_epoch: int = 0, iteration: int = 0):
-        self._logger.info("Evaluate: %s" % dataset.label)
+        """
+        开始评估模型
+        :param model:
+        :type model:
+        :param dataset:
+        :type dataset:
+        :param input_reader:
+        :type input_reader:
+        :param epoch:
+        :type epoch:
+        :param updates_epoch:
+        :type updates_epoch:
+        :param iteration:
+        :type iteration:
+        :return:
+        :rtype:
+        """
+        self._logger.info("开始评估: %s" % dataset.label)
 
         if isinstance(model, DataParallel):
-            # currently no multi GPU support during evaluation
+            #当前不支持多GPU同时评估
             model = model.module
 
         # create evaluator
@@ -306,7 +323,17 @@ class SpERTTrainer(BaseTrainer):
             evaluator.store_examples()
 
     def _predict(self, model: torch.nn.Module, dataset: Dataset, input_reader: BaseInputReader):
-        # create data loader
+        """
+
+        :param model:
+        :type model:
+        :param dataset:
+        :type dataset:
+        :param input_reader:
+        :type input_reader:
+        :return:
+        :rtype:
+        """
         dataset.switch_mode(Dataset.EVAL_MODE)
         data_loader = DataLoader(dataset, batch_size=self._args.eval_batch_size, shuffle=False, drop_last=False,
                                  num_workers=self._args.sampling_processes, collate_fn=sampling.collate_fn_padding)
@@ -353,6 +380,23 @@ class SpERTTrainer(BaseTrainer):
 
     def _log_train(self, optimizer: Optimizer, loss: float, epoch: int,
                    iteration: int, global_iteration: int, label: str):
+        """
+
+        :param optimizer:
+        :type optimizer:
+        :param loss:
+        :type loss:
+        :param epoch:
+        :type epoch:
+        :param iteration:
+        :type iteration:
+        :param global_iteration:
+        :type global_iteration:
+        :param label:
+        :type label:
+        :return:
+        :rtype:
+        """
         # average loss
         avg_loss = loss / self._args.train_batch_size
         # get current learning rate
@@ -377,7 +421,55 @@ class SpERTTrainer(BaseTrainer):
                   rel_nec_prec_micro: float, rel_nec_rec_micro: float, rel_nec_f1_micro: float,
                   rel_nec_prec_macro: float, rel_nec_rec_macro: float, rel_nec_f1_macro: float,
                   epoch: int, iteration: int, global_iteration: int, label: str):
+        """
 
+        :param ner_prec_micro:
+        :type ner_prec_micro:
+        :param ner_rec_micro:
+        :type ner_rec_micro:
+        :param ner_f1_micro:
+        :type ner_f1_micro:
+        :param ner_prec_macro:
+        :type ner_prec_macro:
+        :param ner_rec_macro:
+        :type ner_rec_macro:
+        :param ner_f1_macro:
+        :type ner_f1_macro:
+        :param rel_prec_micro:
+        :type rel_prec_micro:
+        :param rel_rec_micro:
+        :type rel_rec_micro:
+        :param rel_f1_micro:
+        :type rel_f1_micro:
+        :param rel_prec_macro:
+        :type rel_prec_macro:
+        :param rel_rec_macro:
+        :type rel_rec_macro:
+        :param rel_f1_macro:
+        :type rel_f1_macro:
+        :param rel_nec_prec_micro:
+        :type rel_nec_prec_micro:
+        :param rel_nec_rec_micro:
+        :type rel_nec_rec_micro:
+        :param rel_nec_f1_micro:
+        :type rel_nec_f1_micro:
+        :param rel_nec_prec_macro:
+        :type rel_nec_prec_macro:
+        :param rel_nec_rec_macro:
+        :type rel_nec_rec_macro:
+        :param rel_nec_f1_macro:
+        :type rel_nec_f1_macro:
+        :param epoch:
+        :type epoch:
+        :param iteration:
+        :type iteration:
+        :param global_iteration:
+        :type global_iteration:
+        :param label:
+        :type label:
+        :return:
+        :rtype:
+        """
         # log to tensorboard
         self._log_tensorboard(label, 'eval/ner_prec_micro', ner_prec_micro, global_iteration)
         self._log_tensorboard(label, 'eval/ner_recall_micro', ner_rec_micro, global_iteration)
