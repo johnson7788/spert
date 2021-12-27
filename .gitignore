@@ -111,3 +111,4 @@ tmp/
 runs/
 *.state
 checkpoint
+pretrained_model
