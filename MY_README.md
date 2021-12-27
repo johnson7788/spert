@@ -8,7 +8,7 @@ example_train.conf
 ```angular2html
 spert.py train --config configs/example_train.conf --debug
 
-或者尝试使用下载好的预训练模型
+或者尝试使用下载好的预训练模型, 注意，不能动态的通过命令行修改配置，会报错
 spert.py train --config configs/example_train2.conf --debug
 
 2021-12-27 14:15:29,664 [MainThread  ] [INFO ]  开始训练第: 19个 epoch
