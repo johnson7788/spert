@@ -151,7 +151,7 @@ class JsonInputReader(BaseInputReader):
 
     def read(self, dataset_path, dataset_label):
         """
-        读取数据
+        真正开始读取数据
         :param dataset_path:  'data/datasets/conll04/conll04_train.json'
         :type dataset_path:
         :param dataset_label: 'train'
@@ -162,9 +162,9 @@ class JsonInputReader(BaseInputReader):
         # 初始化一个dataset
         dataset = Dataset(dataset_label, self._relation_types, self._entity_types, self._neg_entity_count,
                           self._neg_rel_count, self._max_span_size)
-        # dataset赋值
+        # dataset赋值， 解析数据集，需要耗时较长
         self._parse_dataset(dataset_path, dataset)
-        # daset放到self中
+        # daset放到self中，备用， dataset_label: 'train'
         self._datasets[dataset_label] = dataset
         return dataset
 
@@ -197,16 +197,17 @@ class JsonInputReader(BaseInputReader):
         :return:
         :rtype:
         """
+        # 原始数据的token，实体，和关系
         jtokens = doc['tokens']
         jrelations = doc['relations']
         jentities = doc['entities']
         # eg: doc_encoding: [101, 21158, 169, 16409, 18220, 1116, 112, 158, 119, 156, 119, 17067, 1116, 6177, 17437, 23485, 17175, 1568, 10973, 24400, 1604, 1580, 1527, 16092, 2664, 11336, 2858, 3361, 3998, 1107, 2124, 13075, 1568, 14748, 1942, 1492, 13650, 5706, 102]
-        # 解析token，和编码
+        # 解析token，和编码，doc_tokens是解析原始数据后，我们需要的token
         doc_tokens, doc_encoding = _parse_tokens(jtokens, dataset, self._tokenizer)
         # 解析实体提及
         # eg: jentities: [{'type': 'Loc', 'start': 4, 'end': 5}, {'type': 'Loc', 'start': 9, 'end': 10}, {'type': 'Org', 'start': 10, 'end': 13}, {'type': 'Other', 'start': 15, 'end': 17}, {'type': 'Other', 'start': 17, 'end': 20}]
         # eg: doc_tokens: [Newspaper, `, Explains, ', U.S., Interests, Section, Events, FL1402001894, Havana, Radio, Reloj, Network, in, Spanish, 2100, GMT, 13, Feb, 94]
-        # eg: entities: 返回文档的实体
+        # eg: entities: 返回文档的实体， 解析后的实体
         entities = self._parse_entities(jentities, doc_tokens, dataset)
         #解析关系， 通过解析出来的实体和原书记讲的关系
         # eg: relations = {list: 1} [<spert.entities.Relation object at 0x113103100>]
@@ -217,26 +218,27 @@ class JsonInputReader(BaseInputReader):
         #   reverse = {bool} True
         #   second_entity = {Entity} Radio Reloj Network
         #   tail_entity = {Entity} Havana
+        # 解析后的关系
         relations = self._parse_relations(jrelations, entities, dataset)
-
         #document : document = {Document} <spert.entities.Document object at 0x118fc3e80>
              # doc_id = {int} 0
              # encoding = {list: 39} [101, 21158, 169, 16409, 18220, 1116, 112, 158, 119, 156, 119, 17067, 1116, 6177, 17437, 23485, 17175, 1568, 10973, 24400, 1604, 1580, 1527, 16092, 2664, 11336, 2858, 3361, 3998, 1107, 2124, 13075, 1568, 14748, 1942, 1492, 13650, 5706, 102]
              # entities = {list: 5} [<spert.entities.Entity object at 0x17586c190>, <spert.entities.Entity object at 0x17586c070>, <spert.entities.Entity object at 0x17586c1c0>, <spert.entities.Entity object at 0x17586c220>, <spert.entities.Entity object at 0x17586c280>]
              # relations = {list: 1} [<spert.entities.Relation object at 0x17586c2e0>]
              # tokens = {TokenSpan: 20} <spert.entities.TokenSpan object at 0x177a60550>
+        #加入token，实体，关系到数据集中
         document = dataset.create_document(doc_tokens, entities, relations, doc_encoding)
 
         return document
 
     def _parse_entities(self, jentities, doc_tokens, dataset) -> List[Entity]:
         """
-
-        :param jentities:
+        把原始的json格式的实体，解析成我们需要的格式
+        :param jentities:  原始的json格式的实体格式的列表
         :type jentities:
-        :param doc_tokens:
+        :param doc_tokens: 原始的tokens
         :type doc_tokens:
-        :param dataset:
+        :param dataset: 数据集实例
         :type dataset:
         :return:
         :rtype:

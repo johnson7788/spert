@@ -352,7 +352,7 @@ class Dataset(TorchDataset):
                  neg_rel_count, max_span_size):
         """
 
-        :param label: eg： train
+        :param label: 数据集的名称， eg： train
         :type label:
         :param rel_types: 所有关系的类型
         :type rel_types:
@@ -409,15 +409,15 @@ class Dataset(TorchDataset):
 
     def create_document(self, tokens, entity_mentions, relations, doc_encoding) -> Document:
         """
-
-        :param tokens:
+        创建一条数据，一个document代表一个句子
+        :param tokens: 自定义的token格式 [`, `, If, it, does, not, snow, ,, and, a, lot, ,, within, this, month, we, will, have, no, water, to, submerge, 150, ,, 000, hectares, (, 370, ,, 500, acres, ), of, rice, ,, ', ', said, Bruno, Pusterla, ,, a, top, official, of, the, Italian, Agricultural, Confederation, .]
         :type tokens:
-        :param entity_mentions:
+        :param entity_mentions: 自定义的实体数据集 [<spert.entities.Entity object at 0x7f4e003246a0>, <spert.entities.Entity object at 0x7f4e00324640>, <spert.entities.Entity object at 0x7f4e00324700>, <spert.entities.Entity object at 0x7f4e00324730>, <spert.entities.Entity object at 0x7f4e00324790>]
         :type entity_mentions:
-        :param relations:
+        :param relations: 自定义的关系数据集 [<spert.entities.Relation object at 0x7f4e003247f0>]
         :type relations:
-        :param doc_encoding:
-        :type doc_encoding:
+        :param doc_encoding:  [101, 169, 169, 1409, 1122, 1674, 1136, 4883, 117, 1105, 170, 1974, 117, 1439, 1142, 2370, 1195, 1209, 1138, 1185, 1447, 1106, 4841, 4027, 2176, 4214, 117, 1288, 8754, 113, 17455, 117, 2260, 3913, 114, 1104, 7738, 117, 112, 112, 1163, 10305, 153, 25446, 1742, 117, 170, 1499, 2078, 1104, 1103, 2169, 10705, 13052, 119, 102]
+        :type doc_encoding:  token的id格式
         :return:
         :rtype:
         """

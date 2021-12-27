@@ -65,7 +65,7 @@ class SpERTTrainer(BaseTrainer):
         self._init_eval_logging(valid_label)
         # self._tokenizer 是tokenizer，neg_entity_count，neg_relation_count 负样本实体和关系的数量， max_span_size最大跨度
         #读取数据集， types_path： 'data/datasets/conll04/conll04_types.json'
-        # input_reader是读取数据集的工具
+        # input_reader是读取数据集的工具,
         input_reader = input_reader_cls(types_path, self._tokenizer, args.neg_entity_count,
                                         args.neg_relation_count, args.max_span_size, self._logger)
         # 开始读取数据集,调用自定义的read函数
@@ -82,7 +82,7 @@ class SpERTTrainer(BaseTrainer):
         self._logger.info("每个epoch需要更新的step数量是: %s" % updates_epoch)
         self._logger.info("总共需要更新的steps数量: %s" % updates_total)
 
-        #加载模型
+        #初始化和加载模型
         model = self._load_model(input_reader)
 
         # SpERT目前在单GPU上进行了优化，在多GPU设置中没有进行彻底的测试
@@ -107,7 +107,7 @@ class SpERTTrainer(BaseTrainer):
         # 初始化一个损失类
         compute_loss = SpERTLoss(rel_criterion, entity_criterion, model, optimizer, scheduler, args.max_grad_norm)
 
-        # 评估数据集设置
+        # 没训练前就进行一次数据集评估
         if args.init_eval:
             self._eval(model, validation_dataset, input_reader, 0, updates_epoch)
 
@@ -120,7 +120,7 @@ class SpERTTrainer(BaseTrainer):
             if not args.final_eval or (epoch == args.epochs - 1):
                 self._eval(model, validation_dataset, input_reader, epoch + 1, updates_epoch)
 
-        # save final model
+        #保存最终模型
         extra = dict(epoch=args.epochs, updates_epoch=updates_epoch, epoch_iteration=0)
         global_iteration = args.epochs * updates_epoch
         self._save_model(self._save_path, model, self._tokenizer, global_iteration,
@@ -179,7 +179,7 @@ class SpERTTrainer(BaseTrainer):
         :return:
         :rtype:
         """
-        # model_class 是模型的信息
+        # model_class 是模型类, model_class: <class 'spert.models.SpERT'>
         model_class = models.get_model(self._args.model_type)
         # 加载模型配置，
         config = BertConfig.from_pretrained(self._args.model_path, cache_dir=self._args.cache_path)
@@ -187,7 +187,8 @@ class SpERTTrainer(BaseTrainer):
         util.check_version(config, model_class, self._args.model_path)
         # spert_version： '1.1'
         config.spert_version = model_class.VERSION
-        # 加载模型
+        # 加载模型, eg: self._args.model_path: 'pretrained_model/bert_cased'  如果使用自定义的模型
+        # 调用models.py的SpERT类，初始化模型
         model = model_class.from_pretrained(self._args.model_path,
                                             config=config,
                                             # SpERT model parameters
@@ -507,7 +508,7 @@ class SpERTTrainer(BaseTrainer):
 
     def _log_datasets(self, input_reader):
         """
-        打印数据集信息
+        打印数据集统计信息
         :param input_reader:
         input_reader = {JsonInputReader} Dataset: <spert.entities.Dataset object at 0x13ea35580>\n<spert.entities.Dataset object at 0x13ea35580>Dataset: <spert.entities.Dataset object at 0x14e902ee0>\n<spert.entities.Dataset object at 0x14e902ee0>
              datasets = {dict: 2} {'train': <spert.entities.Dataset object at 0x13ea35580>, 'valid': <spert.entities.Dataset object at 0x14e902ee0>}
@@ -520,14 +521,15 @@ class SpERTTrainer(BaseTrainer):
         :return:
         :rtype:
         """
+        print(f"开始统计已收集到的数据：")
         self._logger.info("关系类型的数量: %s" % input_reader.relation_type_count)
         self._logger.info("实体类型数量: %s" % input_reader.entity_type_count)
 
-        self._logger.info("实体信息:")
+        self._logger.info("每个实体和其对应的id信息:")
         for e in input_reader.entity_types.values():
             self._logger.info(e.verbose_name + '=' + str(e.index))
 
-        self._logger.info("关系信息:")
+        self._logger.info("每个关系和其对应的id信息:")
         for r in input_reader.relation_types.values():
             self._logger.info(r.verbose_name + '=' + str(r.index))
         self._logger.info(f"每个数据集收集的信息统计：")
