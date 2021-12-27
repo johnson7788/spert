@@ -59,4 +59,4 @@ if __name__ == '__main__':
     elif args.mode == 'predict':
         _predict()
     else:
-        raise Exception("Mode not in ['train', 'eval', 'predict'], e.g. 'python spert.py train ...'")
+        raise Exception("必须三选一 ['train', 'eval', 'predict'], e.g. 'python spert.py train ...'")
