@@ -3,8 +3,8 @@ PyTorch code for SpERT: "Span-based Entity and Relation Transformer". For a desc
 
 ![alt text](http://deepca.cs.hs-rm.de/img/deepca/spert.png)
 
-## Setup
-### Requirements
+## 安装
+### 依赖
 - Required
   - Python 3.5+
   - PyTorch (tested with version 1.4.0)
