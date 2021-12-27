@@ -97,10 +97,8 @@ def train_argparser():
 
 def eval_argparser():
     arg_parser = argparse.ArgumentParser()
-
     # Input
-    arg_parser.add_argument('--dataset_path', type=str, help="Path to dataset")
-
+    arg_parser.add_argument('--dataset_path', type=str, help="评估的数据集")
     _add_common_args(arg_parser)
     _add_logging_args(arg_parser)
 

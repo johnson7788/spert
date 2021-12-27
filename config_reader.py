@@ -80,7 +80,7 @@ def _yield_configs(arg_parser, args, verbose=True):
         for run_repeat, run_config in config:
             print("-" * 50)
             print("配置如下:")
-            print(run_config)
+            (print(f"{k}: {v}") for k, v in run_config.items())
 
             args_copy = copy.deepcopy(args)
             config_list = _convert_config(run_config)

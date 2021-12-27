@@ -274,7 +274,7 @@ class SpERTTrainer(BaseTrainer):
         :return:
         :rtype:
         """
-        self._logger.info("开始评估: %s" % dataset.label)
+        self._logger.info("开始评估数据集: %s" % dataset.label)
 
         if isinstance(model, DataParallel):
             #当前不支持多GPU同时评估

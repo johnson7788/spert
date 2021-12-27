@@ -54,29 +54,23 @@ class Evaluator:
         self._pred_relations.extend(batch_pred_relations)
 
     def compute_scores(self):
-        print("Evaluation")
-
-        print("")
-        print("--- Entities (named entity recognition (NER)) ---")
-        print("An entity is considered correct if the entity type and span is predicted correctly")
+        print("评估结果:")
+        print("--- 实体 (named entity recognition (NER)) ---")
+        print("如果正确预测了实体类型和跨度，则认为该实体是正确的。")
         print("")
         gt, pred = self._convert_by_setting(self._gt_entities, self._pred_entities, include_entity_types=True)
         ner_eval = self._score(gt, pred, print_results=True)
 
         print("")
-        print("--- Relations ---")
-        print("")
-        print("Without named entity classification (NEC)")
-        print("A relation is considered correct if the relation type and the spans of the two "
-              "related entities are predicted correctly (entity type is not considered)")
+        print("--- 关系评估1 Without named entity classification (NEC)---")
+        print("如果正确预测了两个相关实体的关系类型和跨度，则认为关系是正确的（不考虑实体类型）")
         print("")
         gt, pred = self._convert_by_setting(self._gt_relations, self._pred_relations, include_entity_types=False)
         rel_eval = self._score(gt, pred, print_results=True)
 
         print("")
-        print("With named entity classification (NEC)")
-        print("A relation is considered correct if the relation type and the two "
-              "related entities are predicted correctly (in span and entity type)")
+        print("--- 关系评估2 With named entity classification (NEC)---")
+        print("如果正确预测了关系类型和两个相关实体（在跨度和实体类型中），则认为关系是正确的")
         print("")
         gt, pred = self._convert_by_setting(self._gt_relations, self._pred_relations, include_entity_types=True)
         rel_nec_eval = self._score(gt, pred, print_results=True)
