@@ -233,7 +233,7 @@ class SpERTTrainer(BaseTrainer):
         iteration = 0
         # eg: total: 461
         total = dataset.document_count // self._args.train_batch_size
-        for batch in tqdm(data_loader, total=total, desc='训练 epoch %s' % epoch):
+        for batch in tqdm(data_loader, total=total, desc='训练第%s个epoch' % epoch):
             model.train()
             # batch: dict_keys(['encodings', 'context_masks', 'entity_masks', 'entity_sizes', 'entity_types', 'rels', 'rel_masks', 'rel_types', 'entity_sample_masks', 'rel_sample_masks'])
             batch = util.to_device(batch, self._device)
@@ -252,7 +252,7 @@ class SpERTTrainer(BaseTrainer):
             # 日志
             iteration += 1
             global_iteration = epoch * updates_epoch + iteration
-            # 是否记录日志
+            # 是否到了改记录日志的时间
             if global_iteration % self._args.train_log_iter == 0:
                 self._log_train(optimizer, batch_loss, epoch, iteration, global_iteration, dataset.label)
 

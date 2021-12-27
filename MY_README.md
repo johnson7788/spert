@@ -190,7 +190,7 @@ spear_trainer.py:SpERTTrainer:train 训练模型函数， 创建日志，读取�
 初始化模型SpERT
 初始化创建优化器，创建学习率scheduler
 创建实体和关系的损失函数，放入SpERTLoss中初始化
-训练模型：
+训练模型：spear_trainer.py：_train_epoch， 训练一个epoch，加载数据集，前向传播，计算损失，保存日志
 评估模型：
 保存模型
 
