@@ -6,6 +6,21 @@ from spert import util
 
 
 def create_train_sample(doc, neg_entity_count: int, neg_rel_count: int, max_span_size: int, rel_type_count: int):
+    """
+    创建训练样本
+    :param doc:
+    :type doc:
+    :param neg_entity_count:
+    :type neg_entity_count:
+    :param neg_rel_count:
+    :type neg_rel_count:
+    :param max_span_size:
+    :type max_span_size:
+    :param rel_type_count:
+    :type rel_type_count:
+    :return:
+    :rtype:
+    """
     encodings = doc.encoding
     token_count = len(doc.tokens)
     context_size = len(encodings)

@@ -118,3 +118,65 @@ spert.py predict --config configs/example_predict.conf
 Parse dataset 'dataset': 100%|██████████| 3/3 [00:00<00:00, 211.76it/s]
 Predict: 100%|██████████| 3/3 [00:18<00:00,  6.11s/it]
 ```
+
+# 目录结构
+```angular2html
+├── args.py    所有的参数
+├── config_reader.py    参数整理
+├── configs   预设的配置文件
+│   ├── example_eval.conf     评估的配置
+│   ├── example_predict.conf
+│   └── example_train.conf  训练的配置
+├── data
+│   ├── datasets
+│   │   ├── ade  数据集
+│   │   ├── conll04
+│   │   │   ├── conll04_dev.json
+│   │   │   ├── conll04_prediction_example.json
+│   │   │   ├── conll04_test.json
+│   │   │   ├── conll04_train.json
+│   │   │   ├── conll04_train_dev.json
+│   │   │   └── conll04_types.json
+│   │   └── scierc
+│   ├── log 保存日志
+│   ├── models  预训练模型
+│   │   ├── ade
+│   │   │   ├── config.json
+│   │   │   ├── pytorch_model.bin
+│   │   │   └── vocab.txt
+│   │   ├── conll04
+│   │   │   ├── config.json
+│   │   │   ├── pytorch_model.bin
+│   │   │   └── vocab.txt
+│   │   └── scierc
+│   │       ├── config.json
+│   │       ├── pytorch_model.bin
+│   │       └── vocab.txt
+│   ├── predictions.json
+│   └── save  训练完成保存的模型
+├── scripts
+│   ├── conversion
+│   │   ├── convert_ade.py
+│   │   ├── convert_conll04.py
+│   │   └── convert_scierc.py
+│   ├── fetch_datasets.sh  下载数据集
+│   └── fetch_models.sh  下载模型
+├── spert
+│   ├── entities.py 实体，关系类型的定义
+│   ├── evaluator.py  评估函数
+│   ├── input_reader.py  读取数据集
+│   ├── loss.py   损失
+│   ├── models.py  模型
+│   ├── opt.py  没啥用
+│   ├── prediction.py  预测处理程序
+│   ├── sampling.py  样本操作程序
+│   ├── spert_trainer.py 训练模型
+│   ├── templates
+│   │   ├── entity_examples.html
+│   │   └── relation_examples.html
+│   ├── trainer.py
+│   └── util.py
+└── spert.py  主程序
+```
+
+# 中文的数据集测试

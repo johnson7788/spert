@@ -14,7 +14,6 @@ from spert.opt import jinja2
 
 SCRIPT_PATH = os.path.dirname(os.path.realpath(__file__))
 
-
 class Evaluator:
     def __init__(self, dataset: Dataset, input_reader: BaseInputReader, text_encoder: BertTokenizer,
                  rel_filter_threshold: float, no_overlapping: bool,

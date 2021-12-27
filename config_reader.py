@@ -72,8 +72,18 @@ def _convert_config(config):
 
 
 def _yield_configs(arg_parser, args, verbose=True):
+    """
+    返回配置
+    :param arg_parser:
+    :type arg_parser:
+    :param args:
+    :type args:
+    :param verbose:
+    :type verbose:
+    :return:
+    :rtype:
+    """
     _print = (lambda x: print(x)) if verbose else lambda x: x
-
     if args.config:
         config = _read_config(args.config)
 

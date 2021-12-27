@@ -1,6 +1,5 @@
 import argparse
 
-
 def _add_common_args(arg_parser):
     """
     常规参数

@@ -4,7 +4,6 @@ from torch.utils.data import Dataset as TorchDataset
 
 from spert import sampling
 
-
 class RelationType:
     def __init__(self, identifier, index, short_name, verbose_name, symmetric=False):
         self._identifier = identifier
