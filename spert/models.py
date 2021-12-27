@@ -113,7 +113,23 @@ class SpERT(BertPreTrainedModel):
 
     def _forward_inference(self, encodings: torch.tensor, context_masks: torch.tensor, entity_masks: torch.tensor,
                            entity_sizes: torch.tensor, entity_spans: torch.tensor, entity_sample_masks: torch.tensor):
-        # get contextualized token embeddings from last transformer layer
+        """
+        从最后一个transformer层获取上下文的token嵌入
+        :param encodings:
+        :type encodings:
+        :param context_masks:
+        :type context_masks:
+        :param entity_masks:
+        :type entity_masks:
+        :param entity_sizes:
+        :type entity_sizes:
+        :param entity_spans:
+        :type entity_spans:
+        :param entity_sample_masks:
+        :type entity_sample_masks:
+        :return:
+        :rtype:
+        """
         context_masks = context_masks.float()
         h = self.bert(input_ids=encodings, attention_mask=context_masks)['last_hidden_state']
 
@@ -187,6 +203,23 @@ class SpERT(BertPreTrainedModel):
         return entity_clf, entity_spans_pool
 
     def _classify_relations(self, entity_spans, size_embeddings, relations, rel_masks, h, chunk_start):
+        """
+
+        :param entity_spans:
+        :type entity_spans:
+        :param size_embeddings:
+        :type size_embeddings:
+        :param relations:
+        :type relations:
+        :param rel_masks:
+        :type rel_masks:
+        :param h:
+        :type h:
+        :param chunk_start:
+        :type chunk_start:
+        :return:
+        :rtype:
+        """
         batch_size = relations.shape[0]
 
         # create chunks if necessary
@@ -222,6 +255,19 @@ class SpERT(BertPreTrainedModel):
         return chunk_rel_logits
 
     def _filter_spans(self, entity_clf, entity_spans, entity_sample_masks, ctx_size):
+        """
+
+        :param entity_clf:
+        :type entity_clf:
+        :param entity_spans:
+        :type entity_spans:
+        :param entity_sample_masks:
+        :type entity_sample_masks:
+        :param ctx_size:
+        :type ctx_size:
+        :return:
+        :rtype:
+        """
         batch_size = entity_clf.shape[0]
         entity_logits_max = entity_clf.argmax(dim=-1) * entity_sample_masks.long()  # get entity type (including none)
         batch_relations = []
@@ -266,6 +312,17 @@ class SpERT(BertPreTrainedModel):
         return batch_relations, batch_rel_masks, batch_rel_sample_masks
 
     def forward(self, *args, inference=False, **kwargs):
+        """
+
+        :param args:
+        :type args:
+        :param inference:
+        :type inference:
+        :param kwargs:
+        :type kwargs:
+        :return:
+        :rtype:
+        """
         if not inference:
             # 训练模式
             return self._forward_train(*args, **kwargs)
