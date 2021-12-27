@@ -298,9 +298,21 @@ class JsonInputReader(BaseInputReader):
 class JsonPredictionInputReader(BaseInputReader):
     def __init__(self, types_path: str, tokenizer: BertTokenizer, spacy_model: str = None,
                  max_span_size: int = None, logger: Logger = None):
+        """
+        解析源数据
+        :param types_path:
+        :type types_path:
+        :param tokenizer:
+        :type tokenizer:
+        :param spacy_model:  en_core_web_sm
+        :type spacy_model:
+        :param max_span_size:
+        :type max_span_size:
+        :param logger:
+        :type logger:
+        """
         super().__init__(types_path, tokenizer, max_span_size=max_span_size, logger=logger)
         self._spacy_model = spacy_model
-
         self._nlp = spacy.load(spacy_model) if spacy is not None and spacy_model is not None else None
 
     def read(self, dataset_path, dataset_label):

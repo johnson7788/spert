@@ -1,3 +1,9 @@
+# 配置文件
+```angular2html
+example_eval.conf  配置文件的第一行是迭代的次数
+example_predict.conf
+example_train.conf
+```
 # 训练模型
 ```angular2html
 spert.py train --config configs/example_train.conf --debug
@@ -103,5 +109,12 @@ Evaluate epoch 0: 100%|███████████████████
 # 预测, 注意，需要下载spacy模型: python -m spacy download en_core_web_sm
 ```
 spert.py predict --config configs/example_predict.conf
-
+--------------------------------------------------
+配置如下:
+需要迭代 1 次
+--------------------------------------------------
+迭代 0
+--------------------------------------------------
+Parse dataset 'dataset': 100%|██████████| 3/3 [00:00<00:00, 211.76it/s]
+Predict: 100%|██████████| 3/3 [00:18<00:00,  6.11s/it]
 ```
