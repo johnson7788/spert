@@ -35,10 +35,18 @@ def create_directories_dir(d):
 
 
 def create_csv(file_path, *column_names):
+    """
+    创建csv文件, 写入表头
+    :param file_path:  'data/log/conll04_train/2021-12-27_16:11:32.297274/lr_train.csv'
+    :type file_path:
+    :param column_names:   ('lr', 'epoch', 'iteration', 'global_iteration')
+    :type column_names:
+    :return:
+    :rtype:
+    """
     if not os.path.exists(file_path):
         with open(file_path, 'w', newline='') as csv_file:
             writer = csv.writer(csv_file, delimiter=CSV_DELIMETER, quotechar='|', quoting=csv.QUOTE_MINIMAL)
-
             if column_names:
                 writer.writerow(column_names)
 

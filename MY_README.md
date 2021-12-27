@@ -184,6 +184,7 @@ Predict: 100%|██████████| 3/3 [00:18<00:00,  6.11s/it]
 
 # 运行流程
 spert.py：__train: 初始化模型类SpERTTrainer，初始化模型保存路径，日志路径，日志级别，加载self._tokenizer等
-
+spear_trainer.py:SpERTTrainer:train 训练模型函数， 创建日志，读取数据集
+读取数据集：input_reader.py：读取实体和关系的映射文件，实体类型，关系类型，加入无实体类型None和无关系类型None, 生成读取数据集的实例input_reader，
 
 # 中文的数据集测试

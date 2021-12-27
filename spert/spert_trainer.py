@@ -60,13 +60,15 @@ class SpERTTrainer(BaseTrainer):
         self._logger.info("使用的训练集和开发集是: %s, %s" % (train_path, valid_path))
         self._logger.info("模型类型是: %s" % args.model_type)
 
-        # 创建日志csv文件
+        # 创建日志csv文件, train_label: 'train',  valid_label: 'valid'
         self._init_train_logging(train_label)
         self._init_eval_logging(valid_label)
-
+        # self._tokenizer 是tokenizer，neg_entity_count，neg_relation_count 负样本实体和关系的数量， max_span_size最大跨度
         #读取数据集， types_path： 'data/datasets/conll04/conll04_types.json'
+        # input_reader是读取数据集的工具
         input_reader = input_reader_cls(types_path, self._tokenizer, args.neg_entity_count,
                                         args.neg_relation_count, args.max_span_size, self._logger)
+        # 开始读取数据集,调用自定义的read函数
         train_dataset = input_reader.read(train_path, train_label)
         validation_dataset = input_reader.read(valid_path, valid_label)
         # 打印数据集统计信息
@@ -536,6 +538,13 @@ class SpERTTrainer(BaseTrainer):
             self._logger.info("实体数量: %s" % d.entity_count)
 
     def _init_train_logging(self, label):
+        """
+        初始化日志文件
+        :param label:
+        :type label:
+        :return:
+        :rtype:
+        """
         self._add_dataset_logging(label,
                                   data={'lr': ['lr', 'epoch', 'iteration', 'global_iteration'],
                                         'loss': ['loss', 'epoch', 'iteration', 'global_iteration'],

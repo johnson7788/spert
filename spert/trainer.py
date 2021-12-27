@@ -73,7 +73,7 @@ class BaseTrainer:
 
     def _add_dataset_logging(self, *labels, data: Dict[str, List[str]]):
         """
-
+        添加日志文件
         :param labels: 日志的名字
         :type labels:
         :param data:
@@ -83,8 +83,8 @@ class BaseTrainer:
         """
         for label in labels:
             dic = dict()
-
             for key, columns in data.items():
+                # eg: path: 'data/log/conll04_train/2021-12-27_16:11:32.297274/lr_train.csv'
                 path = os.path.join(self._log_path, '%s_%s.csv' % (key, label))
                 util.create_csv(path, *columns)
                 dic[key] = path

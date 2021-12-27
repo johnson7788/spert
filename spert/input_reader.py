@@ -31,8 +31,8 @@ class BaseInputReader(ABC):
         :param kwargs: 其它参数
         :type kwargs:
         """
+        # 加载实体和关系的类型文件
         types = json.load(open(types_path), object_pairs_hook=OrderedDict)  # entity + relation types
-
         self._entity_types = OrderedDict()
         # 实体id到名称的映射
         self._idx2entity_type = OrderedDict()
@@ -132,6 +132,21 @@ class BaseInputReader(ABC):
 class JsonInputReader(BaseInputReader):
     def __init__(self, types_path: str, tokenizer: BertTokenizer, neg_entity_count: int = None,
                  neg_rel_count: int = None, max_span_size: int = None, logger: Logger = None):
+        """
+        只生成一个读取数据集的实例，未开始真正读取
+        :param types_path:
+        :type types_path:
+        :param tokenizer:
+        :type tokenizer:
+        :param neg_entity_count:
+        :type neg_entity_count:
+        :param neg_rel_count:
+        :type neg_rel_count:
+        :param max_span_size:
+        :type max_span_size:
+        :param logger:
+        :type logger:
+        """
         super().__init__(types_path, tokenizer, neg_entity_count, neg_rel_count, max_span_size, logger)
 
     def read(self, dataset_path, dataset_label):
