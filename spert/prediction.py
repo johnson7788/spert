@@ -10,19 +10,44 @@ from spert.input_reader import BaseInputReader
 def convert_predictions(batch_entity_clf: torch.tensor, batch_rel_clf: torch.tensor,
                         batch_rels: torch.tensor, batch: dict, rel_filter_threshold: float,
                         input_reader: BaseInputReader, no_overlapping: bool = False):
-    # get maximum activation (index of predicted entity type)
+    """
+
+    :param batch_entity_clf: 【batch_size, 枚举的实体数量，实体的label总数] 预测每个枚举的实体的logtis
+    :type batch_entity_clf:
+    :param batch_rel_clf: [batch_size, 关系数量，关系的label总数] 对每个可能的实体，进行两两配对后，预测出可能的关系，对关系进行判断后的logits
+    :type batch_rel_clf:
+    :param batch_rels:   [batch_size, 关系的数量，2】 实体的位置信息
+    :type batch_rels:
+    :param batch: 一个batch的数据信息
+    'encodings' = {Tensor: (1, 26)} tensor([[  101,  1130, 12439,   117,  1103,  4186,  2084,  1104,  1103,  1244,\n          1311,   117, 25427,   156,   119,  4468,   117,  1108,  1255,  1107,\n          4221, 16836,   117,  3197,   119,   102]])
+'context_masks' = {Tensor: (1, 26)} tensor([[True, True, True, True, True, True, True, True, True, True, True, True,\n         True, True, True, True, True, True, True, True, True, True, True, True,\n         True, True]])
+'entity_masks' = {Tensor: (1, 185, 26)} tensor([[[False,  True, False,  ..., False, False, False],\n         [False, False,  True,  ..., False, False, False],\n         [False, False, False,  ..., False, False, False],\n         ...,\n         [False, False, False,  ..., False, False, False],\n
+'entity_sizes' = {Tensor: (1, 185)} tensor([[ 1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,\n          1,  1,  1,  1,  1,  2,  2,  2,  2,  2,  2,  2,  2,  2,  2,  2,  2,  2,\n          2,  2,  2,  2,  2,  2,  2,  2,  2,  3,  3,  3,  3,  3,  3,  3,  3,  3,\n          3,
+'entity_spans' = {Tensor: (1, 185, 2)} tensor([[[ 1,  2],\n         [ 2,  3],\n         [ 3,  4],\n         [ 4,  5],\n         [ 5,  6],\n         [ 6,  7],\n         [ 7,  8],\n         [ 8,  9],\n         [ 9, 10],\n         [10, 11],\n         [11, 12],\n         [12, 13],\n         [13, 15],\n
+'entity_sample_masks' = {Tensor: (1, 185)} tensor([[True, True, True, True, True, True, True, True, True, True, True, True,\n         True, True, True, True, True, True, True, True, True, True, True, True,\n         True, True, True, True, True, True, True, True, True, True, True, True,\n         True
+    :type batch:
+    :param rel_filter_threshold: 0.4
+    :type rel_filter_threshold:  关系的可能性，大于这个可能性的才保留
+    :param input_reader: 数据读取器
+    :type input_reader:
+    :param no_overlapping: eg:False
+    :type no_overlapping: bool
+    :return:
+    :rtype:
+    """
+    # 获取最大激活（预测实体类型的索引）
     batch_entity_types = batch_entity_clf.argmax(dim=-1)
     # apply entity sample mask
     batch_entity_types *= batch['entity_sample_masks'].long()
 
-    # apply threshold to relations
+    # 过滤关系的logits,  batch_rel_clf: [batch_size, 关系数量，关系的label总数]
     batch_rel_clf[batch_rel_clf < rel_filter_threshold] = 0
 
     batch_pred_entities = []
     batch_pred_relations = []
 
     for i in range(batch_rel_clf.shape[0]):
-        # get model predictions for sample
+        # 获取每个关系的预测结果
         entity_types = batch_entity_types[i]
         entity_spans = batch['entity_spans'][i]
         entity_clf = batch_entity_clf[i]
@@ -43,7 +68,12 @@ def convert_predictions(batch_entity_clf: torch.tensor, batch_rel_clf: torch.ten
 
         batch_pred_entities.append(sample_pred_entities)
         batch_pred_relations.append(sample_pred_relations)
-
+    # batch_pred_entities是预测实体 list, 是预测的关系，list
+    # eg: batch_pred_entities = {list: 1} [[(9, 11, <spert.entities.EntityType object at 0x144e2d1f0>, 0.9992102384567261), (12, 16, <spert.entities.EntityType object at 0x144e2d250>, 0.9991939663887024), (20, 24, <spert.entities.EntityType object at 0x144e2d1f0>, 0.9984266757965088)]]
+    #  0 = {list: 3} [(9, 11, <spert.entities.EntityType object at 0x144e2d1f0>, 0.9992102384567261), (12, 16, <spert.entities.EntityType object at 0x144e2d250>, 0.9991939663887024), (20, 24, <spert.entities.EntityType object at 0x144e2d1f0>, 0.9984266757965088)]
+    #   0 = {tuple: 4} (9, 11, <spert.entities.EntityType object at 0x144e2d1f0>, 0.9992102384567261)
+    #   1 = {tuple: 4} (12, 16, <spert.entities.EntityType object at 0x144e2d250>, 0.9991939663887024)
+    #   2 = {tuple: 4} (20, 24, <spert.entities.EntityType object at 0x144e2d1f0>, 0.9984266757965088)
     return batch_pred_entities, batch_pred_relations
 
 

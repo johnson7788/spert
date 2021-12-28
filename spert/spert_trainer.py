@@ -384,14 +384,13 @@ class SpERTTrainer(BaseTrainer):
                 #  rels [batch_size, 关系的数量，2】 实体的位置信息
                 entity_clf, rel_clf, rels = result
                 # 转换预测
-                predictions = prediction.convert_predictions(entity_clf, rel_clf, rels,
+                batch_pred_entities, batch_pred_relations = prediction.convert_predictions(entity_clf, rel_clf, rels,
                                                              batch, self._args.rel_filter_threshold,
                                                              input_reader)
-
-                batch_pred_entities, batch_pred_relations = predictions
+                # 预测出来的实体和关系，
                 pred_entities.extend(batch_pred_entities)
                 pred_relations.extend(batch_pred_relations)
-
+        # 把预测结果保存至predictions_path, eg: data/predictions.json
         prediction.store_predictions(dataset.documents, pred_entities, pred_relations, self._args.predictions_path)
 
     def _get_optimizer_params(self, model):
