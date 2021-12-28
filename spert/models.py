@@ -11,10 +11,15 @@ from spert import util
 def get_token(h: torch.tensor, x: torch.tensor, token: int):
     """
     获得特定的token嵌入（例如[CLS]）。
-    :param h: 【batch_size, seq_length, emb_size] eg: [2,49,768]
+    :param h: 句子经过bert后的隐藏层向量【batch_size, seq_length, emb_size] eg: [2,49,768]
     :type h:
-    :param x:
-    :type x:
+    :param x: encodings后的id，[batch_size, seq_length]
+    :type x: eg: tensor([[  101,  1130,  2668,   117,   170,  7141,  1107,  5043,  1276,  2132,
+         11374,  5425,  1104, 23637,  2499,  7206, 18638,   117,  1103,  4806,
+         15467,  1104,  1697,  5107,   119,   102],
+        [  101,  1130, 12439,   117,  1103,  2835,  2084,  1104,  1103,  1244,
+          1311,   117, 19936,   139,   119, 10011,   117,  1108,  1255,  1107,
+          8056,   117,  3197,   119,   102,     0]], device='cuda:0')
     :param token:  eg: 101, cls的id
     :type token:int
     :return:
@@ -54,6 +59,7 @@ class SpERT(BertPreTrainedModel):
         self._cls_token = cls_token
         self._relation_types = relation_types
         self._entity_types = entity_types
+        # 考虑的最大的关系数量
         self._max_pairs = max_pairs
 
         # weight initialization
@@ -95,18 +101,18 @@ class SpERT(BertPreTrainedModel):
         :return:
         :rtype:
         """
-        context_masks = context_masks.float()
+        context_masks = context_masks.float() #context_masks转换成float格式
         h = self.bert(input_ids=encodings, attention_mask=context_masks)['last_hidden_state']
-
+        # h是取最后一层隐藏层参数, h的shape, [batch_size, seq_length, hidden_size]
         batch_size = encodings.shape[0]
 
-        # 实体分类，实体的大小的embedding
+        # 实体分类，实体的大小的embedding, [batch_size,实体数量】-->[batch_size,实体数量,size_hidden_size】,eg: [2,104,25]
         size_embeddings = self.size_embeddings(entity_sizes)  # embed entity candidate sizes
-        # entity_clf [ batch_size, entity_num, entity_label_num], eg: [2,102,5]
-        # entity_spans_pool [ batch_size, entity_num, embedding_size], eg: [2,102,768]
+        # entity_clf [ batch_size, entity_num, entity_label_num], eg: [2,102,5]  实体分类
+        # entity_spans_pool [ batch_size, entity_num, embedding_size], eg: [2,102,768] 实体跨度中经过了最大池化
         entity_clf, entity_spans_pool = self._classify_entities(encodings, h, entity_masks, size_embeddings)
 
-        # 关系分类
+        # 关系分类， 可能的self._max_pairs最大的关系数量
         h_large = h.unsqueeze(1).repeat(1, max(min(relations.shape[1], self._max_pairs), 1), 1, 1)
         rel_clf = torch.zeros([batch_size, relations.shape[1], self._relation_types]).to(
             self.rel_classifier.weight.device)
@@ -179,25 +185,25 @@ class SpERT(BertPreTrainedModel):
     def _classify_entities(self, encodings, h, entity_masks, size_embeddings):
         """
         最大池化实体候选跨度, 然后进行对实体分类
-        :param encodings: [batch_size, seq_length] eg: [2,58]
+        :param encodings: [batch_size, seq_length] eg: [2,26]
         :type encodings:
-        :param h: [batch_size, seq_length, embedding_size], eg: [2,58,768]
+        :param h: 句子经过bert后的隐藏层向量， [batch_size, seq_length, embedding_size], eg: [2,26,768]
         :type h:
-        :param entity_masks: [batch_size, entity_num, seq_length], eg: [2,104,60], 例如entity_num是可能的枚举的实体的数量
+        :param entity_masks: [batch_size, entity_num, seq_length], eg: [2,104,26], 例如entity_num是实体的数量, 包括正样本和负样本
         :type entity_masks:
         :param size_embeddings:  # 对实体的长度的embedding, [batch_size, entity_num实体个数, embedding_size], eg: [2,106,25]
         :type size_embeddings:
         :return:
         :rtype:
         """
-        # eg: entity_masks增加一个维度，然盘是否为0， m维度 eg: [2,104,60,1]
+        # eg: entity_masks增加一个维度，然盘是否为0， m维度 eg: [2,104,26,1]
         m = (entity_masks.unsqueeze(-1) == 0).float() * (-1e30)
-        #
+        # 获取实体的向量， [batch_size, entity_num, seq_length, hidden_size], [2,104,26,768]
         entity_spans_pool = m + h.unsqueeze(1).repeat(1, entity_masks.shape[1], 1, 1)
-        # 对快读进行最大池化
+        # 对实体跨度进行最大池化, entity_spans_pool: [batch_size, entity_num,hidden_size], eg: [2,104,768]
         entity_spans_pool = entity_spans_pool.max(dim=2)[0]
 
-        # 获得作为候选上下文表示的cls token
+        # 获得作为候选上下文表示的cls token, entity_ctx: [batch_size, hidden_size]
         entity_ctx = get_token(h, encodings, self._cls_token)
 
         # 创建候选表示，包括背景、最大集合跨度和尺寸嵌入, 拼接这些表示，
@@ -209,7 +215,7 @@ class SpERT(BertPreTrainedModel):
         # 对候选实体进行分类, entity_repr: 【batch_size, entity_num, embedding_size(拼接的向量)]
         # entity_clf, shape: [batch_size, entity_num, entity_labels_num]
         entity_clf = self.entity_classifier(entity_repr)
-
+        # entity_spans_pool: 对实体跨度进行最大池化, entity_spans_pool: [batch_size, entity_num,hidden_size], eg: [2,104,768]
         return entity_clf, entity_spans_pool
 
     def _classify_relations(self, entity_spans, size_embeddings, relations, rel_masks, h, chunk_start):
