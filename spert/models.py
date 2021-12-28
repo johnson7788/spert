@@ -182,29 +182,34 @@ class SpERT(BertPreTrainedModel):
         entity_clf, entity_spans_pool = self._classify_entities(encodings, h, entity_masks, size_embeddings)
 
         # 忽略不构成关系的实际实体的实体候选对象（基于分类器）, entity_spans:  [batch_size,实体数量， 2]， 2表示头实体和尾实体的位置
+        # relations： 【batch_size,关系的数量，2】 2是头实体尾实体的位置
+        # rel_masks: 【batch_size,关系的数量,seq_length] 2个实体之间的词的位置的mask
+        # rel_sample_masks:  [batch_size,关系数量]，padding后，样本1可能有10个关系，样本2有3个关系，那么样本2就有7个FALSE
         relations, rel_masks, rel_sample_masks = self._filter_spans(entity_clf, entity_spans,
                                                                     entity_sample_masks, ctx_size)
-
+        # # 关系分类， 可能的self._max_pairs最大的关系数量， h_large 【batch_size, 关系数量，seq_length, hidden_size]
         rel_sample_masks = rel_sample_masks.float().unsqueeze(-1)
         h_large = h.unsqueeze(1).repeat(1, max(min(relations.shape[1], self._max_pairs), 1), 1, 1)
+        # 初始一个分类的tensor, [batch_size, 关系数量，关系的label的总数], eg:[1,6, 5]
         rel_clf = torch.zeros([batch_size, relations.shape[1], self._relation_types]).to(
             self.rel_classifier.weight.device)
 
         # obtain relation logits
-        # chunk processing to reduce memory usage
+        # 对关系进行分批次预测。这里叫分块预测
         for i in range(0, relations.shape[1], self._max_pairs):
-            # classify relation candidates
+            #预测关系
             chunk_rel_logits = self._classify_relations(entity_spans_pool, size_embeddings,
                                                         relations, rel_masks, h_large, i)
-            # apply sigmoid
+            #对关系logits进行二分类
             chunk_rel_clf = torch.sigmoid(chunk_rel_logits)
+            # 预测结果加入
             rel_clf[:, i:i + self._max_pairs, :] = chunk_rel_clf
-
+        # 只要mask的关系部分
         rel_clf = rel_clf * rel_sample_masks  # mask
 
-        # apply softmax
+        #对实体进行分类结果进行softmax
         entity_clf = torch.softmax(entity_clf, dim=2)
-
+        # 实体分类的logits，rel_clf关系分类的logits, relations带有每个实体的关系的位置信息
         return entity_clf, rel_clf, relations
 
     def _classify_entities(self, encodings, h, entity_masks, size_embeddings):
@@ -321,7 +326,7 @@ class SpERT(BertPreTrainedModel):
         :rtype:
         """
         batch_size = entity_clf.shape[0]
-        #
+        # entity_logits_max： [batch_size, 实体数量], 找出分类出的实体
         entity_logits_max = entity_clf.argmax(dim=-1) * entity_sample_masks.long()  # get entity type (including none)
         batch_relations = []
         batch_rel_masks = []
@@ -332,12 +337,14 @@ class SpERT(BertPreTrainedModel):
             rel_masks = []
             sample_masks = []
 
-            # get spans classified as entities
+            # 将跨度分类为实体， shape为1， eg： tensor([31, 56, 84])， 获取最可能为实体的位置的索引
             non_zero_indices = (entity_logits_max[i] != 0).nonzero().view(-1)
+            # 找出实体的span，即实体的头尾的位置
             non_zero_spans = entity_spans[i][non_zero_indices].tolist()
+            # 实体的索引也变成列表
             non_zero_indices = non_zero_indices.tolist()
 
-            # create relations and masks
+            #创建关系和mask，枚举实体对，把所有实体两两配对
             for i1, s1 in zip(non_zero_indices, non_zero_spans):
                 for i2, s2 in zip(non_zero_indices, non_zero_spans):
                     if i1 != i2:
@@ -346,18 +353,19 @@ class SpERT(BertPreTrainedModel):
                         sample_masks.append(1)
 
             if not rels:
-                # case: no more than two spans classified as entities
+                #情况1：分类为实体的跨度不超过两个，那么就没有关系，随便创建一个
                 batch_relations.append(torch.tensor([[0, 0]], dtype=torch.long))
                 batch_rel_masks.append(torch.tensor([[0] * ctx_size], dtype=torch.bool))
                 batch_rel_sample_masks.append(torch.tensor([0], dtype=torch.bool))
             else:
-                # case: more than two spans classified as entities
+                # 情况2：分类为实体的两个以上跨度，那么创建关系的tensor
                 batch_relations.append(torch.tensor(rels, dtype=torch.long))
                 batch_rel_masks.append(torch.stack(rel_masks))
                 batch_rel_sample_masks.append(torch.tensor(sample_masks, dtype=torch.bool))
 
-        # stack
+        # 获取设备
         device = self.rel_classifier.weight.device
+        # 关系进行padding
         batch_relations = util.padded_stack(batch_relations).to(device)
         batch_rel_masks = util.padded_stack(batch_rel_masks).to(device)
         batch_rel_sample_masks = util.padded_stack(batch_rel_sample_masks).to(device)

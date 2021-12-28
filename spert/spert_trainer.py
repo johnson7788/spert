@@ -379,8 +379,8 @@ class SpERTTrainer(BaseTrainer):
                                entity_masks=batch['entity_masks'], entity_sizes=batch['entity_sizes'],
                                entity_spans=batch['entity_spans'], entity_sample_masks=batch['entity_sample_masks'],
                                inference=True)
+                
                 entity_clf, rel_clf, rels = result
-
                 # convert predictions
                 predictions = prediction.convert_predictions(entity_clf, rel_clf, rels,
                                                              batch, self._args.rel_filter_threshold,
