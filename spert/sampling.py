@@ -134,7 +134,7 @@ def create_train_sample(doc, neg_entity_count: int, neg_rel_count: int, max_span
     assert len(rels) == len(rel_masks) == len(rel_types)
     # create tensors  token id变成tensor
     encodings = torch.tensor(encodings, dtype=torch.long)
-    # masking of tokens
+    # masking of tokens， eg: context_size: 45, 样本的长度， 样本的长度
     context_masks = torch.ones(context_size, dtype=torch.bool)
     # 创建样本masking：
     # 一个批次的实体和关系的样本mask

@@ -237,15 +237,15 @@ class SpERTTrainer(BaseTrainer):
             model.train()
             # batch: dict_keys(['encodings', 'context_masks', 'entity_masks', 'entity_sizes', 'entity_types', 'rels', 'rel_masks', 'rel_types', 'entity_sample_masks', 'rel_sample_masks'])
             # encodings: [batch_size, padding后的seq_length], token变成id后的内容
-            # context_masks:
-            # entity_masks:
-            # entity_sizes: 
-            # 'entity_types',
-            # 'rels',
-            # 'rel_masks',
-            # 'rel_types',
-            # 'entity_sample_masks',
-            # 'rel_sample_masks'
+            # context_masks: [batch_size, padding后的seq_length】， 样本的实际的长度的mask
+            # entity_masks:[batch_size,实体数量，padding后的seq_length] 实体的在句子位置mask
+            # entity_sizes: [batch_size,实体数量】 每个实体的长度
+            # 'entity_types',[batch_size,,实体数量】
+            # 'rels',[batch_size, 关系数量，头实体和尾实体的位置索引】， eg[2,6,2]， 6是包含了正负样本
+            # 'rel_masks',[batch_size,关系数量,padding后的seq_length] 关系在样本中的位置，即2个实体之间的词
+            # 'rel_types',[batch_size,关系数量，关系的标签总数]  one-hot了的关系
+            # 'entity_sample_masks',[batch_size,实体数量]， padding后
+            # 'rel_sample_masks'[batch_size,关系数量]，padding后，样本1可能有10个关系，样本2有3个关系，那么样本2就有7个FALSE
             batch = util.to_device(batch, self._device)
 
             # 前向step

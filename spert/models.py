@@ -69,6 +69,16 @@ class SpERT(BertPreTrainedModel):
     def _forward_train(self, encodings: torch.tensor, context_masks: torch.tensor, entity_masks: torch.tensor,
                        entity_sizes: torch.tensor, relations: torch.tensor, rel_masks: torch.tensor):
         """
+            # encodings: [batch_size, padding后的seq_length], token变成id后的内容
+            # context_masks: [batch_size, padding后的seq_length】， 样本的实际的长度的mask
+            # entity_masks:[batch_size,实体数量，padding后的seq_length] 实体的在句子位置mask
+            # entity_sizes: [batch_size,实体数量】 每个实体的长度
+            # 'entity_types',[batch_size,,实体数量】
+            # 'rels',[batch_size, 关系数量，头实体和尾实体的位置索引】， eg[2,6,2]， 6是包含了正负样本
+            # 'rel_masks',[batch_size,关系数量,padding后的seq_length] 关系在样本中的位置，即2个实体之间的词
+            # 'rel_types',[batch_size,关系数量，关系的标签总数]  one-hot了的关系
+            # 'entity_sample_masks',[batch_size,实体数量]， padding后
+            # 'rel_sample_masks'[batch_size,关系数量]，padding后，样本1可能有10个关系，样本2有3个关系，那么样本2就有7个FALSE
         从最后一个transformer层获得上下文的token嵌入。 训练
         :param encodings: 【batch_size,
         :type encodings:
@@ -313,7 +323,17 @@ class SpERT(BertPreTrainedModel):
 
     def forward(self, *args, inference=False, **kwargs):
         """
-
+        args的内容，字典格式
+            # encodings: [batch_size, padding后的seq_length], token变成id后的内容
+            # context_masks: [batch_size, padding后的seq_length】， 样本的实际的长度的mask
+            # entity_masks:[batch_size,实体数量，padding后的seq_length] 实体的在句子位置mask
+            # entity_sizes: [batch_size,实体数量】 每个实体的长度
+            # 'entity_types',[batch_size,,实体数量】
+            # 'rels',[batch_size, 关系数量，头实体和尾实体的位置索引】， eg[2,6,2]， 6是包含了正负样本
+            # 'rel_masks',[batch_size,关系数量,padding后的seq_length] 关系在样本中的位置，即2个实体之间的词
+            # 'rel_types',[batch_size,关系数量，关系的标签总数]  one-hot了的关系
+            # 'entity_sample_masks',[batch_size,实体数量]， padding后
+            # 'rel_sample_masks'[batch_size,关系数量]，padding后，样本1可能有10个关系，样本2有3个关系，那么样本2就有7个FALSE
         :param args:
         :type args:
         :param inference:
