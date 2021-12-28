@@ -49,7 +49,7 @@ class SpERT(BertPreTrainedModel):
         # 首先加载Bert模型
         self.bert = BertModel(config)
 
-        # 新建分类层
+        # 新建分类层, 关系分类， relation_types是关系label的数量，这里是5，5个关系
         self.rel_classifier = nn.Linear(config.hidden_size * 3 + size_embedding * 2, relation_types)
         self.entity_classifier = nn.Linear(config.hidden_size * 2 + size_embedding, entity_types)
         # 实体的大小进行embedding
@@ -127,8 +127,9 @@ class SpERT(BertPreTrainedModel):
             # h_large 【batch_size, 关系数量，seq_length, hidden_size]
             chunk_rel_logits = self._classify_relations(entity_spans_pool, size_embeddings,
                                                         relations, rel_masks, h_large, i)
+            # 分块后的关系的预测结果
             rel_clf[:, i:i + self._max_pairs, :] = chunk_rel_logits
-
+        # 返回实体和关系预测的logits
         return entity_clf, rel_clf
 
     def _forward_inference(self, encodings: torch.tensor, context_masks: torch.tensor, entity_masks: torch.tensor,
@@ -265,20 +266,23 @@ class SpERT(BertPreTrainedModel):
         size_pair_embeddings = size_pair_embeddings.view(batch_size, size_pair_embeddings.shape[1], -1)
 
         # 关系上下文（实体候选对之间的上下文）
-        # mask非实体候选token
+        # mask非实体候选token，   rel_masks： [batch_size,关系数量,padding后的seq_length] 关系在样本中的位置，即2个实体之间的词
+        # m： [batch_size,关系数量,padding后的seq_length， 1]
         m = ((rel_masks == 0).float() * (-1e30)).unsqueeze(-1)
+        # h和rel_ctx的形状都是【batch_size, 关系数量，seq_length, hidden_size]，m+h的形状还是m的形状
         rel_ctx = m + h
-        # max pooling
+        #最大池化，rel_ctx: 维度【batch_size,关系数量, hidden_size】
         rel_ctx = rel_ctx.max(dim=2)[0]
-        # set the context vector of neighboring or adjacent entity candidates to zero
+        # 将相邻或相邻候选实体的上下文向量设置为零, rel_ctx: 维度【batch_size,关系数量, hidden_size】
         rel_ctx[rel_masks.to(torch.uint8).any(-1) == 0] = 0
 
-        # create relation candidate representations including context, max pooled entity candidate pairs
-        # and corresponding size embeddings
+        # 创建关系候选表示，包括上下文、最大池化实体候选对和对应的实体size表示的嵌入向量
+        # rel_ctx： eg: [2,20,768], entity_pairs: [2,20,1539],  size_pair_embeddings: [2,20,50]
+        # rel_repr 是3个向量的拼接， [2,20,2354]， 2354是3个隐藏向量维度+ 2个实体的size的维度
         rel_repr = torch.cat([rel_ctx, entity_pairs, size_pair_embeddings], dim=2)
         rel_repr = self.dropout(rel_repr)
 
-        # classify relation candidates
+        #关系分类，
         chunk_rel_logits = self.rel_classifier(rel_repr)
         return chunk_rel_logits
 
