@@ -7,25 +7,28 @@ from spert import util
 
 def create_train_sample(doc, neg_entity_count: int, neg_rel_count: int, max_span_size: int, rel_type_count: int):
     """
-    创建训练样本
-    :param doc:
+    创建训练样本, 被多线程调用了，创建训练集，在
+    :param doc: 一条数据集合
     :type doc:
-    :param neg_entity_count:
+    :param neg_entity_count: 100
     :type neg_entity_count:
-    :param neg_rel_count:
+    :param neg_rel_count: 100
     :type neg_rel_count:
-    :param max_span_size:
-    :type max_span_size:
-    :param rel_type_count:
+    :param max_span_size:  10
+    :type max_span_size: int
+    :param rel_type_count:  关系的类型的数量， 6
     :type rel_type_count:
     :return:
     :rtype:
     """
+    # encodings: [101, 1249, 1111, 1103, 107, 4765, 1111, 1898, 118, 1729, 27597, 117, 107, 1103, 140, 15681, 2101, 18029, 1116, 1115, 107, 3239, 1105, 1927, 5172, 1619, 1103, 4765, 4762, 1106, 1412, 3268, 1105, 5401, 1103, 2666, 1104, 1160, 4765, 1121, 1103, 14885, 142, 18791, 1186, 6257, 131, 22796, 2825, 1186, 1107, 6627, 6090, 129, 119, 127, 117, 1105, 7847, 1186, 3902, 1107, 6090, 129, 119, 130, 117, 2292, 1103, 3239, 5594, 1112, 107, 1632, 7705, 119, 107, 113, 23690, 2116, 6216, 1112, 1502, 114, 1109, 140, 15681, 2101, 5115, 1115, 22796, 2825, 1186, 1110, 170, 107, 5530, 2301, 1114, 6047...
     encodings = doc.encoding
+    # 原始token的数量
     token_count = len(doc.tokens)
+    # token encoding到id之后的数量
     context_size = len(encodings)
 
-    # positive entities
+    # 正样本实体，
     pos_entity_spans, pos_entity_types, pos_entity_masks, pos_entity_sizes = [], [], [], []
     for e in doc.entities:
         pos_entity_spans.append(e.span)
@@ -33,9 +36,9 @@ def create_train_sample(doc, neg_entity_count: int, neg_rel_count: int, max_span
         pos_entity_masks.append(create_entity_mask(*e.span, context_size))
         pos_entity_sizes.append(len(e.tokens))
 
-    # positive relations
+    # 正样本关系
 
-    # collect relations between entity pairs
+    # 收集实体对之间的关系
     entity_pair_relations = dict()
     for rel in doc.relations:
         pair = (rel.head_entity, rel.tail_entity)
@@ -146,6 +149,15 @@ def create_train_sample(doc, neg_entity_count: int, neg_rel_count: int, max_span
 
 
 def create_eval_sample(doc, max_span_size: int):
+    """
+
+    :param doc:
+    :type doc:
+    :param max_span_size:
+    :type max_span_size:
+    :return:
+    :rtype:
+    """
     encodings = doc.encoding
     token_count = len(doc.tokens)
     context_size = len(encodings)
@@ -194,12 +206,34 @@ def create_eval_sample(doc, max_span_size: int):
 
 
 def create_entity_mask(start, end, context_size):
+    """
+
+    :param start:
+    :type start:
+    :param end:
+    :type end:
+    :param context_size:
+    :type context_size:
+    :return:
+    :rtype:
+    """
     mask = torch.zeros(context_size, dtype=torch.bool)
     mask[start:end] = 1
     return mask
 
 
 def create_rel_mask(s1, s2, context_size):
+    """
+
+    :param s1:
+    :type s1:
+    :param s2:
+    :type s2:
+    :param context_size:
+    :type context_size:
+    :return:
+    :rtype:
+    """
     start = s1[1] if s1[1] < s2[0] else s2[1]
     end = s2[0] if s1[1] < s2[0] else s1[0]
     mask = create_entity_mask(start, end, context_size)
@@ -207,6 +241,13 @@ def create_rel_mask(s1, s2, context_size):
 
 
 def collate_fn_padding(batch):
+    """
+    collate 函数
+    :param batch:
+    :type batch:
+    :return:
+    :rtype:
+    """
     padded_batch = dict()
     keys = batch[0].keys()
 
