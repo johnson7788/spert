@@ -379,9 +379,11 @@ class SpERTTrainer(BaseTrainer):
                                entity_masks=batch['entity_masks'], entity_sizes=batch['entity_sizes'],
                                entity_spans=batch['entity_spans'], entity_sample_masks=batch['entity_sample_masks'],
                                inference=True)
-                
+                # entity_clf 【batch_size, 枚举的实体数量，实体的label总数] 预测每个枚举的实体的logtis
+                # rel_clf [batch_size, 关系数量，关系的label总数] 对每个可能的实体，进行两两配对后，预测出可能的关系，对关系进行判断后的logits
+                #  rels [batch_size, 关系的数量，2】 实体的位置信息
                 entity_clf, rel_clf, rels = result
-                # convert predictions
+                # 转换预测
                 predictions = prediction.convert_predictions(entity_clf, rel_clf, rels,
                                                              batch, self._args.rel_filter_threshold,
                                                              input_reader)
