@@ -204,10 +204,22 @@ def padded_stack(tensors, padding=0):
 
 
 def batch_index(tensor, index, pad=False):
+    """
+    根据给定的index检索给定的tensor
+    :param tensor:
+    :type tensor:
+    :param index:
+    :type index:
+    :param pad:
+    :type pad:
+    :return:
+    :rtype:
+    """
     if tensor.shape[0] != index.shape[0]:
-        raise Exception()
+        raise Exception(f"第一个维度不相同，请检查")
 
     if not pad:
+        # 返回的维度[batch_size, 关系数量，头实体和尾实体的位置，hidden_size]
         return torch.stack([tensor[i][index[i]] for i in range(index.shape[0])])
     else:
         return padded_stack([tensor[i][index[i]] for i in range(index.shape[0])])

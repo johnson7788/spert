@@ -86,17 +86,17 @@ class SpERT(BertPreTrainedModel):
             # 'entity_sample_masks',[batch_size,实体数量]， padding后
             # 'rel_sample_masks'[batch_size,关系数量]，padding后，样本1可能有10个关系，样本2有3个关系，那么样本2就有7个FALSE
         从最后一个transformer层获得上下文的token嵌入。 训练
-        :param encodings: 【batch_size,
+        :param encodings: 【batch_size,seq_length]
         :type encodings:
-        :param context_masks:【batch_size,
+        :param context_masks:【batch_size,seq_length
         :type context_masks:
-        :param entity_masks:【batch_size,
+        :param entity_masks:【batch_size,实体数量, seq_length]
         :type entity_masks:
-        :param entity_sizes:【batch_size,
+        :param entity_sizes:【batch_size,实体数量]
         :type entity_sizes:
-        :param relations:【batch_size,
+        :param relations:【batch_size,关系数量，头实体和尾实体的位置索引]
         :type relations:
-        :param rel_masks:【batch_size,
+        :param rel_masks:【batch_size,关系数量, seq_length]， 关系在样本中的位置，即2个实体之间的词
         :type rel_masks:
         :return:
         :rtype:
@@ -109,18 +109,22 @@ class SpERT(BertPreTrainedModel):
         # 实体分类，实体的大小的embedding, [batch_size,实体数量】-->[batch_size,实体数量,size_hidden_size】,eg: [2,104,25]
         size_embeddings = self.size_embeddings(entity_sizes)  # embed entity candidate sizes
         # entity_clf [ batch_size, entity_num, entity_label_num], eg: [2,102,5]  实体分类
-        # entity_spans_pool [ batch_size, entity_num, embedding_size], eg: [2,102,768] 实体跨度中经过了最大池化
+        # entity_spans_pool [ batch_size, entity_num, embedding_size], eg: [2,102,768] 实体跨度中经过了最大池化， 如果一个实体中有3个词，找出最大的那个词代表这个实体
         entity_clf, entity_spans_pool = self._classify_entities(encodings, h, entity_masks, size_embeddings)
 
-        # 关系分类， 可能的self._max_pairs最大的关系数量
+        # 关系分类， 可能的self._max_pairs最大的关系数量， h_large 【batch_size, 关系数量，seq_length, hidden_size]
         h_large = h.unsqueeze(1).repeat(1, max(min(relations.shape[1], self._max_pairs), 1), 1, 1)
+        # 初始一个分类的tensor, [batch_size, 关系数量，关系的label的总数], eg:[2,42, 5]
         rel_clf = torch.zeros([batch_size, relations.shape[1], self._relation_types]).to(
             self.rel_classifier.weight.device)
 
         # 获取关系的logits
         # 分块处理以减少内存使用
         for i in range(0, relations.shape[1], self._max_pairs):
-            # 对关系候选者进行分类
+            # 对关系候选者进行分类, entity_spans_pool[batch_size,实体数量，hidden_size], size_embeddings实体的长度的embedding [batch_size,实体数量，size_hidden_size]
+            # relations:【batch_size,关系数量，头实体和尾实体的位置索引] 关系的头实体和尾实体在实体向量中的位置索引
+            # 'rel_masks',[batch_size,关系数量,padding后的seq_length] 关系在样本中的位置，即2个实体之间的词
+            # h_large 【batch_size, 关系数量，seq_length, hidden_size]
             chunk_rel_logits = self._classify_relations(entity_spans_pool, size_embeddings,
                                                         relations, rel_masks, h_large, i)
             rel_clf[:, i:i + self._max_pairs, :] = chunk_rel_logits
@@ -220,40 +224,48 @@ class SpERT(BertPreTrainedModel):
 
     def _classify_relations(self, entity_spans, size_embeddings, relations, rel_masks, h, chunk_start):
         """
-
-        :param entity_spans:
+         # 对关系候选者进行分类
+        :param entity_spans:  entity_spans_pool [batch_size,实体数量，hidden_size]， 代表这个实体的向量
         :type entity_spans:
-        :param size_embeddings:
+        :param size_embeddings: size_embeddings实体的长度的embedding [batch_size,实体数量，size_hidden_size]
         :type size_embeddings:
-        :param relations:
+        :param relations: 【batch_size,关系数量，头实体和尾实体的位置索引] 关系的头实体和尾实体在实体向量中的位置索引
         :type relations:
-        :param rel_masks:
+        :param rel_masks: [batch_size,关系数量,padding后的seq_length] 关系在样本中的位置，即2个实体之间的词
         :type rel_masks:
-        :param h:
+        :param h: 【batch_size, 关系数量，seq_length, hidden_size]
         :type h:
-        :param chunk_start:
-        :type chunk_start:
+        :param chunk_start: ？？？, eg:0,
+        :type chunk_start: int
         :return:
         :rtype:
         """
         batch_size = relations.shape[0]
 
-        # create chunks if necessary
+        # 如果可能关系的数量大于我们预设的最大关系的对数，那么对关系进行拆分
         if relations.shape[1] > self._max_pairs:
             relations = relations[:, chunk_start:chunk_start + self._max_pairs]
             rel_masks = rel_masks[:, chunk_start:chunk_start + self._max_pairs]
             h = h[:, :relations.shape[1], :]
 
-        # get pairs of entity candidate representations
+        # 获取实体候选表示对， entity_spans： [batch_size,实体数量，hidden_size]，
+        # relations： [batch_size, 关系数量，头实体和尾实体的位置在实体列表中信息]
+        # entity_pairs： [batch_size, 关系数量，头实体和尾实体的位置，hidden_size]
+        # entity_pairs：每个关系对应的头尾实体的向量
         entity_pairs = util.batch_index(entity_spans, relations)
+        # 合并后2个维度, [batch_size, 关系数量，头实体和尾实体的位置 * hidden_size]
         entity_pairs = entity_pairs.view(batch_size, entity_pairs.shape[1], -1)
 
-        # get corresponding size embeddings
+        # 每个实体的长度的位置，对应成关系
+        # size_embeddings 【batch_size, 实体数量, size_hidden_size】
+        # relations： [batch_size, 关系数量，头实体和尾实体的位置在实体列表中信息]
+        #  size_pair_embeddings 维度 [batch_size, 关系数量，头实体和尾实体的位置, size_hidden_size], eg: [2,6,2,25]
         size_pair_embeddings = util.batch_index(size_embeddings, relations)
+        # 合并后2个维度, [batch_size, 关系数量，头实体和尾实体的位置, size_hidden_size]
         size_pair_embeddings = size_pair_embeddings.view(batch_size, size_pair_embeddings.shape[1], -1)
 
-        # relation context (context between entity candidate pair)
-        # mask non entity candidate tokens
+        # 关系上下文（实体候选对之间的上下文）
+        # mask非实体候选token
         m = ((rel_masks == 0).float() * (-1e30)).unsqueeze(-1)
         rel_ctx = m + h
         # max pooling
