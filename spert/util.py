@@ -160,11 +160,12 @@ def extend_tensor(tensor, extended_shape, fill=0):
     :return:
     :rtype:
     """
+    # eg: tensor_shape: 34
     tensor_shape = tensor.shape
-
+    # 创建一个相同的shape的tensor，用padding的内容填充，这里是0填充
     extended_tensor = torch.zeros(extended_shape, dtype=tensor.dtype).to(tensor.device)
     extended_tensor = extended_tensor.fill_(fill)
-
+    # 根据维度的不同，把原tensor填充进来
     if len(tensor_shape) == 1:
         extended_tensor[:tensor_shape[0]] = tensor
     elif len(tensor_shape) == 2:
@@ -194,9 +195,10 @@ def padded_stack(tensors, padding=0):
     padded_tensors = []
 
     for t in tensors:
+        # 对每个数据进行padding
         e = extend_tensor(t, max_shape, fill=padding)
         padded_tensors.append(e)
-
+    # padding后的数据进行stack
     stacked = torch.stack(padded_tensors)
     return stacked
 

@@ -236,6 +236,16 @@ class SpERTTrainer(BaseTrainer):
         for batch in tqdm(data_loader, total=total, desc='训练第%s个epoch' % epoch):
             model.train()
             # batch: dict_keys(['encodings', 'context_masks', 'entity_masks', 'entity_sizes', 'entity_types', 'rels', 'rel_masks', 'rel_types', 'entity_sample_masks', 'rel_sample_masks'])
+            # encodings: [batch_size, padding后的seq_length], token变成id后的内容
+            # context_masks:
+            # entity_masks:
+            # entity_sizes: 
+            # 'entity_types',
+            # 'rels',
+            # 'rel_masks',
+            # 'rel_types',
+            # 'entity_sample_masks',
+            # 'rel_sample_masks'
             batch = util.to_device(batch, self._device)
 
             # 前向step
