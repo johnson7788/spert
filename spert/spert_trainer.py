@@ -158,6 +158,17 @@ class SpERTTrainer(BaseTrainer):
         self._close_summary_writer()
 
     def predict(self, dataset_path: str, types_path: str, input_reader_cls: Type[BaseInputReader]):
+        """
+        预测
+        :param dataset_path: 'data/datasets/conll04/conll04_prediction_example.json'
+        :type dataset_path:  数据集路径
+        :param types_path: 'data/datasets/conll04/conll04_types.json'
+        :type types_path: 关系和实体的类型的路径
+        :param input_reader_cls: 数据集读取器
+        :type input_reader_cls:
+        :return:
+        :rtype:
+        """
         args = self._args
 
         # read datasets
@@ -337,12 +348,12 @@ class SpERTTrainer(BaseTrainer):
 
     def _predict(self, model: torch.nn.Module, dataset: Dataset, input_reader: BaseInputReader):
         """
-
-        :param model:
+         开始预测
+        :param model: 实例化后的模型
         :type model:
-        :param dataset:
+        :param dataset: 数据集
         :type dataset:
-        :param input_reader:
+        :param input_reader: 数据集读取器
         :type input_reader:
         :return:
         :rtype:
@@ -360,10 +371,10 @@ class SpERTTrainer(BaseTrainer):
             # iterate batches
             total = math.ceil(dataset.document_count / self._args.eval_batch_size)
             for batch in tqdm(data_loader, total=total, desc='Predict'):
-                # move batch to selected device
+                # 把batch放到GPU上
                 batch = util.to_device(batch, self._device)
 
-                # run model (forward pass)
+                # 前向传播
                 result = model(encodings=batch['encodings'], context_masks=batch['context_masks'],
                                entity_masks=batch['entity_masks'], entity_sizes=batch['entity_sizes'],
                                entity_spans=batch['entity_spans'], entity_sample_masks=batch['entity_sample_masks'],

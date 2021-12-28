@@ -136,17 +136,35 @@ class SpERT(BertPreTrainedModel):
                            entity_sizes: torch.tensor, entity_spans: torch.tensor, entity_sample_masks: torch.tensor):
         """
         从最后一个transformer层获取上下文的token嵌入
-        :param encodings:
+            context_masks = {Tensor: (1, 26)} tensor([[True, True, True, True, True, True, True, True, True, True, True, True,\n         True, True, True, True, True, True, True, True, True, True, True, True,\n         True, True]])
+            encodings = {Tensor: (1, 26)} tensor([[  101,  1130, 12439,   117,  1103,  4186,  2084,  1104,  1103,  1244,\n          1311,   117, 25427,   156,   119,  4468,   117,  1108,  1255,  1107,\n          4221, 16836,   117,  3197,   119,   102]])
+            entity_masks = {Tensor: (1, 185, 26)} tensor([[[False,  True, False,  ..., False, False, False],\n         [False, False,  True,  ..., False, False, False],\n         [False, False, False,  ..., False, False, False],\n         ...,\n         [False, False, False,  ..., False, False, False],\n
+            entity_sample_masks = {Tensor: (1, 185)} tensor([[True, True, True, True, True, True, True, True, True, True, True, True,\n         True, True, True, True, True, True, True, True, True, True, True, True,\n         True, True, True, True, True, True, True, True, True, True, True, True,\n         True
+            entity_sizes = {Tensor: (1, 185)} tensor([[ 1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,\n          1,  1,  1,  1,  1,  2,  2,  2,  2,  2,  2,  2,  2,  2,  2,  2,  2,  2,\n          2,  2,  2,  2,  2,  2,  2,  2,  2,  3,  3,  3,  3,  3,  3,  3,  3,  3,\n          3,
+            entity_spans = {Tensor: (1, 185, 2)} tensor([[[ 1,  2],\n         [ 2,  3],\n         [ 3,  4],\n         [ 4,  5],\n         [ 5,  6],\n         [ 6,  7],\n         [ 7,  8],\n         [ 8,  9],\n         [ 9, 10],\n         [10, 11],\n         [11, 12],\n         [12, 13],\n         [13, 15],\n
+            self = {SpERT} SpERT(\n  (bert): BertModel(\n    (embeddings): BertEmbeddings(\n      (word_embeddings): Embedding(28996, 768, padding_idx=0)\n      (position_embeddings): Embedding(512, 768)\n      (token_type_embeddings): Embedding(2, 768)\n      (LayerNorm): LayerNorm((768,
+        :param encodings:  token转换成id, [batch_size, seq_length]
         :type encodings:
-        :param context_masks:
+        :param context_masks:  样本的实际的长度的mask, [batch_size, seq_length]
         :type context_masks:
-        :param entity_masks:
-        :type entity_masks:
+        :param entity_masks:  [batch_size,实体数量，padding后的seq_length] 实体的在句子位置mask, 实体数量是枚举的所有的可能
+        :type entity_masks:  [batch_size,实体数量], 枚举的实体从最小到最大的跨度
         :param entity_sizes:
+        tensor([[ 1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,
+          1,  1,  1,  1,  1,  2,  2,  2,  2,  2,  2,  2,  2,  2,  2,  2,  2,  2,
+          2,  2,  2,  2,  2,  2,  2,  2,  2,  3,  3,  3,  3,  3,  3,  3,  3,  3,
+          3,  3,  3,  3,  3,  3,  3,  3,  3,  3,  3,  3,  4,  4,  4,  4,  4,  4,
+          4,  4,  4,  4,  4,  4,  4,  4,  4,  4,  4,  4,  4,  4,  5,  5,  5,  5,
+          5,  5,  5,  5,  5,  5,  5,  5,  5,  5,  5,  5,  5,  5,  5,  6,  6,  6,
+          6,  6,  6,  6,  6,  6,  6,  6,  6,  6,  6,  6,  6,  6,  6,  7,  7,  7,
+          7,  7,  7,  7,  7,  7,  7,  7,  7,  7,  7,  7,  7,  7,  8,  8,  8,  8,
+          8,  8,  8,  8,  8,  8,  8,  8,  8,  8,  8,  8,  9,  9,  9,  9,  9,  9,
+          9,  9,  9,  9,  9,  9,  9,  9,  9, 10, 10, 10, 10, 10, 10, 10, 10, 10,
+         10, 10, 10, 10, 10]])
         :type entity_sizes:
-        :param entity_spans:
+        :param entity_spans:  [batch_size,实体数量， 2]， 2表示头实体和尾实体的位置
         :type entity_spans:
-        :param entity_sample_masks:
+        :param entity_sample_masks: [batch_size,实体数量]， 样本1可能有10个实体，样本2有3个实体，那么样本2就有7个FALSE
         :type entity_sample_masks:
         :return:
         :rtype:
@@ -155,13 +173,15 @@ class SpERT(BertPreTrainedModel):
         h = self.bert(input_ids=encodings, attention_mask=context_masks)['last_hidden_state']
 
         batch_size = encodings.shape[0]
+        # ctx_size：序列长度
         ctx_size = context_masks.shape[-1]
-
-        # classify entities
+        #实体分类, size_embeddings, [batch_size,实体数量，25】
         size_embeddings = self.size_embeddings(entity_sizes)  # embed entity candidate sizes
+        # entity_clf: [batch_size, 实体数量，实体的labels总数]
+        # entity_spans_pool:  [batch_size,实体数量，hidden_size]
         entity_clf, entity_spans_pool = self._classify_entities(encodings, h, entity_masks, size_embeddings)
 
-        # ignore entity candidates that do not constitute an actual entity for relations (based on classifier)
+        # 忽略不构成关系的实际实体的实体候选对象（基于分类器）, entity_spans:  [batch_size,实体数量， 2]， 2表示头实体和尾实体的位置
         relations, rel_masks, rel_sample_masks = self._filter_spans(entity_clf, entity_spans,
                                                                     entity_sample_masks, ctx_size)
 
@@ -289,18 +309,19 @@ class SpERT(BertPreTrainedModel):
     def _filter_spans(self, entity_clf, entity_spans, entity_sample_masks, ctx_size):
         """
 
-        :param entity_clf:
+        :param entity_clf: [batch_size, 实体数量,实体的label总数]
         :type entity_clf:
-        :param entity_spans:
+        :param entity_spans: [batch_size, 实体数量,2】 头尾实体的位置
         :type entity_spans:
-        :param entity_sample_masks:
+        :param entity_sample_masks: [batch_size, 实体数量]
         :type entity_sample_masks:
-        :param ctx_size:
-        :type ctx_size:
+        :param ctx_size: 序列长度
+        :type ctx_size: int
         :return:
         :rtype:
         """
         batch_size = entity_clf.shape[0]
+        #
         entity_logits_max = entity_clf.argmax(dim=-1) * entity_sample_masks.long()  # get entity type (including none)
         batch_relations = []
         batch_rel_masks = []

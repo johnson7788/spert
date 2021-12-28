@@ -66,8 +66,8 @@ bash ./scripts/fetch_datasets.sh
   "relations": [
     {
       "type": "Adverse-Effect",
-      "head": 0,
-      "tail": 1
+      "head": 0,   #头实体在实体列表中的位置
+      "tail": 1    #尾实体在实体列表中的位置
     },
     {
       "type": "Adverse-Effect",
