@@ -444,7 +444,7 @@ class Dataset(TorchDataset):
 
     def __getitem__(self, index: int):
         doc = self._documents[index]
-
+        # 判断是训练还是评估模式，进行不同的处理
         if self._mode == Dataset.TRAIN_MODE:
             return sampling.create_train_sample(doc, self._neg_entity_count, self._neg_rel_count,
                                                 self._max_span_size, len(self._rel_types))

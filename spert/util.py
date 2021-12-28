@@ -149,6 +149,17 @@ def get_as_list(dic, key):
 
 
 def extend_tensor(tensor, extended_shape, fill=0):
+    """
+    对tensor向量进行扩充，即padding
+    :param tensor:
+    :type tensor:
+    :param extended_shape:  [30]， 填充的最大维度
+    :type extended_shape: list
+    :param fill: 使用0进行padding
+    :type fill:
+    :return:
+    :rtype:
+    """
     tensor_shape = tensor.shape
 
     extended_tensor = torch.zeros(extended_shape, dtype=tensor.dtype).to(tensor.device)
@@ -167,8 +178,18 @@ def extend_tensor(tensor, extended_shape, fill=0):
 
 
 def padded_stack(tensors, padding=0):
+    """
+    对样本进行padding， padding后进行stack
+    :param tensors: list 格式，里面是长度不等的tensor
+    :type tensors:
+    :param padding: 使用0进行padding
+    :type padding:
+    :return:
+    :rtype:
+    """
+    # 确定数据维度个数
     dim_count = len(tensors[0].shape)
-
+    # 确定最后一维的维度的最大数量
     max_shape = [max([t.shape[d] for t in tensors]) for d in range(dim_count)]
     padded_tensors = []
 
