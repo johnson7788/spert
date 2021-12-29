@@ -112,3 +112,4 @@ runs/
 *.state
 checkpoint
 pretrained_model
+data/datasets/kaiyuan

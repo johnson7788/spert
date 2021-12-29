@@ -122,3 +122,43 @@ Markus Eberts, Adrian Ulges. Span-based Joint Entity and Relation Extraction wit
 [4] Pankaj Gupta,  Hinrich Schütze, and Bernt Andrassy, ‘Table Filling Multi-Task Recurrent  Neural  Network  for  Joint  Entity  and  Relation Extraction’, in Proc. of COLING 2016, pp. 2537–2547, Osaka, Japan, (December 2016). The COLING 2016 Organizing Committee.
 [5] Iz Beltagy, Kyle Lo, and Arman Cohan, ‘SciBERT: A Pretrained Language Model for Scientific Text’, in EMNLP, (2019).
 ```
+
+
+
+{
+  "tokens": [
+    "John",
+    "Wilkes",
+    "Booth",
+    ",",
+    "who",
+    "assassinated",
+    "President",
+    "Lincoln",
+    ",",
+    "was",
+    "an",
+    "actor",
+    "."
+  ],
+  "entities": [
+    {
+      "type": "Peop",
+      "start": 0,
+      "end": 3
+    },
+    {
+      "type": "Peop",
+      "start": 6,
+      "end": 8
+    }
+  ],
+  "relations": [
+    {
+      "type": "Kill",
+      "head": 0,
+      "tail": 1
+    }
+  ],
+  "orig_id": 5178
+}
