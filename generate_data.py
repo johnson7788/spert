@@ -15,7 +15,7 @@ def get_data():
     data = []
     relations_names = []
     entity_names = []
-    source_data = get_shenji_entity_relation(dirpath="/opt/ai/kaiyuan")
+    source_data = get_shenji_entity_relation(dirpath='/opt/ai/kaiyuan', with_file=False, max_seq_length=300)
     for one_data in source_data:
         text = one_data["text"]
         tokens = list(text)
